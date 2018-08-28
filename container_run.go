@@ -54,19 +54,20 @@ func buildVolumes(options map[string]string) []string {
 	return volumes
 }
 
-func runContainer(cli *client.Client, options *containerOptions) (string, error) {
+func runContainer(cli *client.Client, options *containerOptions) (containerInfo, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
 	hostConfig.Binds = buildVolumes(options.Volumes)
 	body, err := cliContainerCreate(cli, options.Name, &config, &hostConfig)
+	emptyInfo := containerInfo{}
 	if err != nil {
-		return "", err
+		return emptyInfo, err
 	}
 	err = cliContainerStart(cli, body.ID)
 	if err != nil {
 		removeContainer(cli, body.ID)
-		return "", err
+		return emptyInfo, err
 	}
-	return body.ID, nil
+	return inspectContainer(cli, body.ID)
 }

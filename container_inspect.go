@@ -14,10 +14,15 @@ func cliContainerInspect(cli *client.Client, containerID string) (types.Containe
 	return cli.ContainerInspect(ctx, containerID)
 }
 
-func inspectContainer(cli *client.Client, containerID string) (string, error) {
+func inspectContainer(cli *client.Client, containerID string) (containerInfo, error) {
 	data, err := cliContainerInspect(cli, containerID)
 	if err != nil {
-		return "", err
+		return containerInfo{}, err
 	}
-	return data.State.Status, nil
+	return containerInfo{
+		ID:    data.ID,
+		Name:  data.Name,
+		Image: data.Image,
+		State: data.State.Status,
+	}, nil
 }
