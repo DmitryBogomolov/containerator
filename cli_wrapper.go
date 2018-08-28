@@ -35,6 +35,18 @@ func cliContainerStart(cli client.ContainerAPIClient, containerID string) error 
 	return cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{})
 }
 
+func cliContainerStop(cli client.ContainerAPIClient, containerID string) error {
+	ctx, cancel := getContext()
+	defer cancel()
+	return cli.ContainerStop(ctx, containerID, nil)
+}
+
+func cliContainerRename(cli client.ContainerAPIClient, containerID string, newName string) error {
+	ctx, cancel := getContext()
+	defer cancel()
+	return cli.ContainerRename(ctx, containerID, newName)
+}
+
 func cliContainerRemove(cli client.ContainerAPIClient, containerID string) error {
 	ctx, cancel := getContext()
 	defer cancel()
