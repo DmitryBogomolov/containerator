@@ -9,58 +9,63 @@ import (
 	"github.com/docker/docker/client"
 )
 
-type imageDesc struct {
+type imageInfo struct {
+	id      string
 	tag     string
 	created int64
 }
 
-type imageDescList []*imageDesc
+type imageInfoList []*imageInfo
 
-func (list imageDescList) Len() int {
+func (list imageInfoList) Len() int {
 	return len(list)
 }
 
-func (list imageDescList) Swap(i, j int) {
+func (list imageInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-func (list imageDescList) Less(i, j int) bool {
+func (list imageInfoList) Less(i, j int) bool {
 	return list[i].created > list[j].created
 }
 
-func selectImageDesc(baseTag string, image *types.ImageSummary) *imageDesc {
+func selectImageInfo(tagPrefix string, image *types.ImageSummary) *imageInfo {
 	for _, tag := range image.RepoTags {
-		if strings.HasPrefix(tag, baseTag) {
-			return &imageDesc{tag, image.Created}
+		if strings.HasPrefix(tag, tagPrefix) {
+			return &imageInfo{
+				id:      image.ID,
+				tag:     tag,
+				created: image.Created,
+			}
 		}
 	}
 	return nil
 }
 
-func filterImagesByRepoTag(baseTag string, images []types.ImageSummary) string {
-	var descList imageDescList
+func filterImagesByTag(tagPrefix string, images []types.ImageSummary) *imageInfo {
+	var descList imageInfoList
 	for _, image := range images {
-		desc := selectImageDesc(baseTag, &image)
+		desc := selectImageInfo(tagPrefix, &image)
 		if desc != nil {
 			descList = append(descList, desc)
 		}
 	}
 	if len(descList) == 0 {
-		return ""
+		return nil
 	}
 	sort.Sort(descList)
-	return descList[0].tag
+	return descList[0]
 }
 
-func findImageRepoTag(cli client.ImageAPIClient, baseTag string) (string, error) {
+func findImageByTag(cli client.ImageAPIClient, tagPrefix string) (*imageInfo, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	tag := filterImagesByRepoTag(baseTag, images)
-	if tag == "" {
-		return "", fmt.Errorf("image %s is not found", baseTag)
+	tag := filterImagesByTag(tagPrefix, images)
+	if tag == nil {
+		return nil, fmt.Errorf("image %s is not found", tagPrefix)
 	}
 	return tag, nil
 }
