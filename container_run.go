@@ -65,7 +65,7 @@ func runContainer(cli *client.Client, options *containerOptions) (string, error)
 	}
 	err = cliContainerStart(cli, body.ID)
 	if err != nil {
-		// TODO: Remove container
+		removeContainer(cli, body.ID)
 		return "", err
 	}
 	return body.ID, nil
