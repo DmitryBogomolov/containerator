@@ -39,7 +39,7 @@ func buildVolumes(options map[string]string) []string {
 	return volumes
 }
 
-func runContainer(cli *client.Client, options *containerOptions) (containerInfo, error) {
+func runContainer(cli client.ContainerAPIClient, options *containerOptions) (containerInfo, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)

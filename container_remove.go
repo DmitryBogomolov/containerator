@@ -4,6 +4,6 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func removeContainer(cli *client.Client, containerID string) error {
+func removeContainer(cli client.ContainerAPIClient, containerID string) error {
 	return cliContainerRemove(cli, containerID)
 }

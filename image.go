@@ -52,7 +52,7 @@ func filterImagesByRepoTag(baseTag string, images []types.ImageSummary) string {
 	return descList[0].tag
 }
 
-func findImageRepoTag(cli *client.Client, baseTag string) (string, error) {
+func findImageRepoTag(cli client.ImageAPIClient, baseTag string) (string, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
 		return "", err
