@@ -4,12 +4,12 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func inspectContainer(cli client.ContainerAPIClient, containerID string) (containerInfo, error) {
+func inspectContainer(cli client.ContainerAPIClient, containerID string) (*containerInfo, error) {
 	data, err := cliContainerInspect(cli, containerID)
 	if err != nil {
-		return containerInfo{}, err
+		return nil, err
 	}
-	return containerInfo{
+	return &containerInfo{
 		ID:    data.ID,
 		Name:  data.Name,
 		Image: data.Image,
