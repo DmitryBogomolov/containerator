@@ -9,10 +9,13 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/client"
 )
 
-type testImageAPIClient struct{}
+type stubFunc func(args ...interface{}) (interface{}, error)
+
+type testImageAPIClient struct {
+	stub stubFunc
+}
 
 func (cli *testImageAPIClient) ImageBuild(ctx context.Context, context io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
 	return types.ImageBuildResponse{}, nil
@@ -42,7 +45,8 @@ func (cli *testImageAPIClient) ImageInspectWithRaw(ctx context.Context, image st
 }
 
 func (cli *testImageAPIClient) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
-	return nil, nil
+	ret, err := cli.stub(ctx, options)
+	return ret.([]types.ImageSummary), err
 }
 
 func (cli *testImageAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
@@ -78,13 +82,54 @@ func (cli *testImageAPIClient) ImagesPrune(ctx context.Context, pruneFilter filt
 }
 
 func TestFindImageRepoTag(t *testing.T) {
-	var cli client.ImageAPIClient = &testImageAPIClient{}
 
-	tag, err := findImageRepoTag(cli, "test")
-	if err != nil {
-		t.Fatal(err)
+	getImages := func(args ...interface{}) (interface{}, error) {
+		list := []types.ImageSummary{
+			types.ImageSummary{
+				RepoTags: []string{"test:1", "test:2"},
+				Created:  2,
+			},
+			types.ImageSummary{},
+			types.ImageSummary{
+				RepoTags: []string{"test:3", "test:4"},
+				Created:  4,
+			},
+		}
+		return list, nil
 	}
-	if tag != "test" {
-		t.Fatalf("Tag: %s", tag)
-	}
+
+	cli := &testImageAPIClient{stub: getImages}
+
+	t.Run("Searches for tag", func(t *testing.T) {
+		tag, err := findImageRepoTag(cli, "test:2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedTag = "test:2"
+		if tag != expectedTag {
+			t.Fatalf("tag: %s / expected: %s", tag, expectedTag)
+		}
+	})
+
+	t.Run("Sorts by creation time", func(t *testing.T) {
+		tag, err := findImageRepoTag(cli, "test")
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedTag = "test:3"
+		if tag != expectedTag {
+			t.Fatalf("tag: %s / expected: %s", tag, expectedTag)
+		}
+	})
+
+	t.Run("Returns error if nothing is found", func(t *testing.T) {
+		_, err := findImageRepoTag(cli, "test:5")
+		if err == nil {
+			t.Fatal("Error is expected")
+		}
+		const expectedErr = "image test:5 is not found"
+		if err.Error() != expectedErr {
+			t.Fatalf("error: %s / expected: %s", err, expectedErr)
+		}
+	})
 }
