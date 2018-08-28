@@ -1,21 +1,13 @@
 package containerator
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
-
-func cliImageList(cli *client.Client) ([]types.ImageSummary, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	return cli.ImageList(ctx, types.ImageListOptions{})
-}
 
 type imageDesc struct {
 	tag     string

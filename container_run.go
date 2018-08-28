@@ -1,27 +1,12 @@
 package containerator
 
 import (
-	"context"
 	"fmt"
-	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
-
-func cliContainerCreate(cli *client.Client, containerName string, config *container.Config, hostConfig *container.HostConfig) (container.ContainerCreateCreatedBody, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	return cli.ContainerCreate(ctx, config, hostConfig, nil, containerName)
-}
-
-func cliContainerStart(cli *client.Client, containerID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	return cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{})
-}
 
 type containerOptions struct {
 	Image   string
@@ -59,7 +44,7 @@ func runContainer(cli *client.Client, options *containerOptions) (containerInfo,
 	hostConfig := container.HostConfig{}
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
 	hostConfig.Binds = buildVolumes(options.Volumes)
-	body, err := cliContainerCreate(cli, options.Name, &config, &hostConfig)
+	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)
 	emptyInfo := containerInfo{}
 	if err != nil {
 		return emptyInfo, err
