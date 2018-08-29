@@ -103,29 +103,29 @@ func TestFindImageRepoTag(t *testing.T) {
 	cli := &testImageAPIClient{stub: getImages}
 
 	t.Run("Searches for tag", func(t *testing.T) {
-		image, err := findImageByTag(cli, "test:2")
+		image, err := FindImageByTag(cli, "test:2")
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := imageInfo{id: "i1", tag: "test:2", created: 2}
+		expected := ImageInfo{ID: "i1", Tag: "test:2", Created: 2}
 		if *image != expected {
 			t.Fatalf("tag: %v / expected: %v", image, expected)
 		}
 	})
 
 	t.Run("Sorts by creation time", func(t *testing.T) {
-		image, err := findImageByTag(cli, "test")
+		image, err := FindImageByTag(cli, "test")
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := imageInfo{id: "i2", tag: "test:3", created: 4}
+		expected := ImageInfo{ID: "i2", Tag: "test:3", Created: 4}
 		if *image != expected {
 			t.Fatalf("tag: %v / expected: %v", image, expected)
 		}
 	})
 
 	t.Run("Returns error if nothing is found", func(t *testing.T) {
-		_, err := findImageByTag(cli, "test:5")
+		_, err := FindImageByTag(cli, "test:5")
 		if err == nil {
 			t.Fatal("Error is expected")
 		}

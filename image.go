@@ -9,13 +9,14 @@ import (
 	"github.com/docker/docker/client"
 )
 
-type imageInfo struct {
-	id      string
-	tag     string
-	created int64
+// ImageInfo contains image information.
+type ImageInfo struct {
+	ID      string
+	Tag     string
+	Created int64
 }
 
-type imageInfoList []*imageInfo
+type imageInfoList []*ImageInfo
 
 func (list imageInfoList) Len() int {
 	return len(list)
@@ -26,23 +27,23 @@ func (list imageInfoList) Swap(i, j int) {
 }
 
 func (list imageInfoList) Less(i, j int) bool {
-	return list[i].created > list[j].created
+	return list[i].Created > list[j].Created
 }
 
-func selectImageInfo(tagPrefix string, image *types.ImageSummary) *imageInfo {
+func selectImageInfo(tagPrefix string, image *types.ImageSummary) *ImageInfo {
 	for _, tag := range image.RepoTags {
 		if strings.HasPrefix(tag, tagPrefix) {
-			return &imageInfo{
-				id:      image.ID,
-				tag:     tag,
-				created: image.Created,
+			return &ImageInfo{
+				ID:      image.ID,
+				Tag:     tag,
+				Created: image.Created,
 			}
 		}
 	}
 	return nil
 }
 
-func filterImagesByTag(tagPrefix string, images []types.ImageSummary) *imageInfo {
+func filterImagesByTag(tagPrefix string, images []types.ImageSummary) *ImageInfo {
 	var descList imageInfoList
 	for _, image := range images {
 		desc := selectImageInfo(tagPrefix, &image)
@@ -57,7 +58,8 @@ func filterImagesByTag(tagPrefix string, images []types.ImageSummary) *imageInfo
 	return descList[0]
 }
 
-func findImageByTag(cli client.ImageAPIClient, tagPrefix string) (*imageInfo, error) {
+// FindImageByTag selects images by tag prefix.
+func FindImageByTag(cli client.ImageAPIClient, tagPrefix string) (*ImageInfo, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
 		return nil, err
