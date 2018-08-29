@@ -8,7 +8,8 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-type containerOptions struct {
+// ContainerOptions contains options for container.
+type ContainerOptions struct {
 	Image   string
 	Name    string
 	Volumes map[string]string
@@ -16,8 +17,8 @@ type containerOptions struct {
 }
 
 func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
-	var ports nat.PortSet
-	var bindings nat.PortMap
+	ports := make(nat.PortSet)
+	bindings := make(nat.PortMap)
 	dummy := struct{}{}
 	for from, to := range options {
 		key := nat.Port(fmt.Sprintf("%d/tcp", from))
@@ -39,7 +40,8 @@ func buildVolumes(options map[string]string) []string {
 	return volumes
 }
 
-func runContainer(cli client.ContainerAPIClient, options *containerOptions) (*containerInfo, error) {
+// RunContainer creates and starts container.
+func RunContainer(cli client.ContainerAPIClient, options *ContainerOptions) (*ContainerInfo, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 	config.Image = options.Image

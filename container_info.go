@@ -1,6 +1,7 @@
 package containerator
 
-type containerInfo struct {
+// ContainerInfo contains container information.
+type ContainerInfo struct {
 	ID    string
 	Name  string
 	Image string
