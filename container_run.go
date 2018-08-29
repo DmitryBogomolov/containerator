@@ -19,7 +19,7 @@ type ContainerOptions struct {
 func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
 	ports := make(nat.PortSet)
 	bindings := make(nat.PortMap)
-	dummy := struct{}{}
+	var dummy struct{}
 	for from, to := range options {
 		key := nat.Port(fmt.Sprintf("%d/tcp", from))
 		ports[key] = dummy
