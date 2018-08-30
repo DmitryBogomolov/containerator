@@ -31,39 +31,26 @@ func TestFindImageRepoTag(t *testing.T) {
 		return cli
 	}
 
-	t.Run("Searches for tag", func(t *testing.T) {
+	t.Run("FindByTag", func(t *testing.T) {
 		cli := getCli()
 		image, err := FindImageByTag(cli, "test:2")
-		if err != nil {
-			t.Fatal(err)
-		}
-		expected := ImageInfo{ID: "i1", Tag: "test:2", Created: 2}
-		if *image != expected {
-			t.Fatalf("tag: %v / expected: %v", image, expected)
-		}
+
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, *image, ImageInfo{ID: "i1", Tag: "test:2", Created: 2}, "image")
 	})
 
-	t.Run("Sorts by creation time", func(t *testing.T) {
+	t.Run("SortByCreationTime", func(t *testing.T) {
 		cli := getCli()
 		image, err := FindImageByTag(cli, "test")
-		if err != nil {
-			t.Fatal(err)
-		}
-		expected := ImageInfo{ID: "i2", Tag: "test:3", Created: 4}
-		if *image != expected {
-			t.Fatalf("tag: %v / expected: %v", image, expected)
-		}
+
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, *image, ImageInfo{ID: "i2", Tag: "test:3", Created: 4}, "image")
 	})
 
-	t.Run("Returns error if nothing is found", func(t *testing.T) {
+	t.Run("ErrorIfNotFound", func(t *testing.T) {
 		cli := getCli()
 		_, err := FindImageByTag(cli, "test:5")
-		if err == nil {
-			t.Fatal("Error is expected")
-		}
-		const expectedErr = "image test:5 is not found"
-		if err.Error() != expectedErr {
-			t.Fatalf("error: %s / expected: %s", err, expectedErr)
-		}
+
+		assertEqual(t, err.Error(), "image test:5 is not found", "error")
 	})
 }
