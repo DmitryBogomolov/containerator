@@ -3,12 +3,17 @@ package containerator
 import (
 	"testing"
 
+	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
+	"github.com/golang/mock/gomock"
 )
 
 func TestFindImageRepoTag(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	getImages := func(args ...interface{}) (interface{}, error) {
+	getCli := func() *test_mocks.MockImageAPIClient {
+		cli := test_mocks.NewMockImageAPIClient(ctrl)
 		list := []types.ImageSummary{
 			types.ImageSummary{
 				ID:       "i1",
@@ -22,12 +27,12 @@ func TestFindImageRepoTag(t *testing.T) {
 				Created:  4,
 			},
 		}
-		return list, nil
+		cli.EXPECT().ImageList(gomock.Any(), gomock.Any()).Return(list, nil)
+		return cli
 	}
 
-	cli := &testImageAPIClient{stub: getImages}
-
 	t.Run("Searches for tag", func(t *testing.T) {
+		cli := getCli()
 		image, err := FindImageByTag(cli, "test:2")
 		if err != nil {
 			t.Fatal(err)
@@ -39,6 +44,7 @@ func TestFindImageRepoTag(t *testing.T) {
 	})
 
 	t.Run("Sorts by creation time", func(t *testing.T) {
+		cli := getCli()
 		image, err := FindImageByTag(cli, "test")
 		if err != nil {
 			t.Fatal(err)
@@ -50,6 +56,7 @@ func TestFindImageRepoTag(t *testing.T) {
 	})
 
 	t.Run("Returns error if nothing is found", func(t *testing.T) {
+		cli := getCli()
 		_, err := FindImageByTag(cli, "test:5")
 		if err == nil {
 			t.Fatal("Error is expected")
