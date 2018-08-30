@@ -17,6 +17,9 @@ type ContainerOptions struct {
 }
 
 func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
+	if len(options) == 0 {
+		return nil, nil
+	}
 	ports := make(nat.PortSet)
 	bindings := make(nat.PortMap)
 	var dummy struct{}
