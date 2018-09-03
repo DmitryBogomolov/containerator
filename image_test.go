@@ -8,49 +8,85 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestFindImageRepoTag(t *testing.T) {
+func TestFindImage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	getCli := func() *test_mocks.MockImageAPIClient {
-		cli := test_mocks.NewMockImageAPIClient(ctrl)
-		list := []types.ImageSummary{
-			types.ImageSummary{
-				ID:       "i1",
-				RepoTags: []string{"test:1", "test:2"},
-				Created:  2,
-			},
-			types.ImageSummary{},
-			types.ImageSummary{
-				ID:       "i2",
-				RepoTags: []string{"test:3", "test:4"},
-				Created:  4,
-			},
-		}
-		cli.EXPECT().ImageList(gomock.Any(), gomock.Any()).Return(list, nil)
-		return cli
+	testImages := []types.ImageSummary{
+		types.ImageSummary{
+			ID:       "i1",
+			RepoTags: []string{"test", "test:1"},
+			Created:  10,
+		},
+		types.ImageSummary{
+			ID:       "i2",
+			RepoTags: []string{},
+			Created:  12,
+		},
+		types.ImageSummary{
+			ID:       "i3",
+			RepoTags: []string{"test:2"},
+			Created:  14,
+		},
+		types.ImageSummary{
+			ID:       "i4",
+			RepoTags: []string{"test:3", "test:4"},
+			Created:  12,
+		},
 	}
 
-	t.Run("FindByTag", func(t *testing.T) {
-		cli := getCli()
-		image, err := FindImageByTag(cli, "test:2")
+	cli := test_mocks.NewMockImageAPIClient(ctrl)
+	cli.EXPECT().ImageList(gomock.Any(), gomock.Any()).Return(testImages, nil).AnyTimes()
 
+	t.Run("ByID", func(t *testing.T) {
+		var image *ImageInfo
+		var err error
+
+		image, err = FindImage(cli, FindImageOptions{ID: "i1"})
 		assertEqual(t, err, nil, "error")
-		assertEqual(t, *image, ImageInfo{ID: "i1", Tag: "test:2", Created: 2}, "image")
+		assertEqual(t, *image, ImageInfo{ID: "i1", Name: "test", Created: 10}, "image")
+
+		image, err = FindImage(cli, FindImageOptions{ID: "i2"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, *image, ImageInfo{ID: "i2", Created: 12}, "image")
+
+		image, err = FindImage(cli, FindImageOptions{ID: "unknown"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, image, nil, "image")
 	})
 
-	t.Run("SortByCreationTime", func(t *testing.T) {
-		cli := getCli()
-		image, err := FindImageByTag(cli, "test")
+	t.Run("ByRepo", func(t *testing.T) {
+		var image *ImageInfo
+		var err error
 
+		image, err = FindImage(cli, FindImageOptions{Repo: "test"})
 		assertEqual(t, err, nil, "error")
-		assertEqual(t, *image, ImageInfo{ID: "i2", Tag: "test:3", Created: 4}, "image")
+		assertEqual(t, *image, ImageInfo{ID: "i3", Name: "test:2", Created: 14}, "image")
+
+		image, err = FindImage(cli, FindImageOptions{Repo: "unknown"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, image, nil, "image")
 	})
 
-	t.Run("ErrorIfNotFound", func(t *testing.T) {
-		cli := getCli()
-		_, err := FindImageByTag(cli, "test:5")
+	t.Run("ByRepoAndTag", func(t *testing.T) {
+		var image *ImageInfo
+		var err error
 
-		assertEqual(t, err.Error(), "image test:5 is not found", "error")
+		image, err = FindImage(cli, FindImageOptions{Repo: "test", Tag: "3"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, *image, ImageInfo{ID: "i4", Name: "test:3", Created: 12}, "image")
+
+		image, err = FindImage(cli, FindImageOptions{Repo: "test", Tag: "4"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, *image, ImageInfo{ID: "i4", Name: "test:4", Created: 12}, "image")
+
+		image, err = FindImage(cli, FindImageOptions{Repo: "test", Tag: "5"})
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, image, nil, "image")
+	})
+
+	t.Run("RaiseError", func(t *testing.T) {
+		_, err := FindImage(cli, FindImageOptions{})
+		assertEqual(t, err, ErrFindImage, "error")
 	})
 }

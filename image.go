@@ -1,7 +1,7 @@
 package containerator
 
 import (
-	"fmt"
+	"errors"
 	"sort"
 	"strings"
 
@@ -12,30 +12,37 @@ import (
 // ImageInfo contains image information.
 type ImageInfo struct {
 	ID      string
-	Tag     string
+	Name    string
 	Created int64
 }
 
-type imageInfoList []*ImageInfo
+type imageSummaryListByCreated []*types.ImageSummary
 
-func (list imageInfoList) Len() int {
+func (list imageSummaryListByCreated) Len() int {
 	return len(list)
 }
 
-func (list imageInfoList) Swap(i, j int) {
+func (list imageSummaryListByCreated) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-func (list imageInfoList) Less(i, j int) bool {
+func (list imageSummaryListByCreated) Less(i, j int) bool {
 	return list[i].Created > list[j].Created
 }
 
-func selectImageInfo(tagPrefix string, image *types.ImageSummary) *ImageInfo {
-	for _, tag := range image.RepoTags {
-		if strings.HasPrefix(tag, tagPrefix) {
+func getImageName(image *types.ImageSummary) string {
+	if len(image.RepoTags) > 0 {
+		return image.RepoTags[0]
+	}
+	return ""
+}
+
+func findImageByID(id string, images []types.ImageSummary) *ImageInfo {
+	for _, image := range images {
+		if image.ID == id {
 			return &ImageInfo{
-				ID:      image.ID,
-				Tag:     tag,
+				ID:      id,
+				Name:    getImageName(&image),
 				Created: image.Created,
 			}
 		}
@@ -43,31 +50,75 @@ func selectImageInfo(tagPrefix string, image *types.ImageSummary) *ImageInfo {
 	return nil
 }
 
-func filterImagesByTag(tagPrefix string, images []types.ImageSummary) *ImageInfo {
-	var descList imageInfoList
-	for _, image := range images {
-		desc := selectImageInfo(tagPrefix, &image)
-		if desc != nil {
-			descList = append(descList, desc)
+func filterImagesByRepo(repo string, images []types.ImageSummary) []*types.ImageSummary {
+	var list []*types.ImageSummary
+	for i, image := range images {
+		for _, repoTag := range image.RepoTags {
+			parts := strings.Split(repoTag, ":")
+			if parts[0] == repo {
+				list = append(list, &images[i])
+				break
+			}
 		}
 	}
-	if len(descList) == 0 {
-		return nil
-	}
-	sort.Sort(descList)
-	return descList[0]
+	return list
 }
 
-// FindImageByTag selects images by tag prefix.
-func FindImageByTag(cli client.ImageAPIClient, tagPrefix string) (*ImageInfo, error) {
+func findNewestImage(images []*types.ImageSummary) *ImageInfo {
+	if len(images) == 0 {
+		return nil
+	}
+	sort.Sort(imageSummaryListByCreated(images))
+	image := images[0]
+	return &ImageInfo{
+		ID:      image.ID,
+		Name:    getImageName(image),
+		Created: image.Created,
+	}
+}
+
+func findImageByTag(tag string, images []*types.ImageSummary) *ImageInfo {
+	for _, image := range images {
+		for _, repoTag := range image.RepoTags {
+			parts := strings.Split(repoTag, ":")
+			if len(parts) > 1 && parts[1] == tag {
+				return &ImageInfo{
+					ID:      image.ID,
+					Name:    repoTag,
+					Created: image.Created,
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// ErrFindImage shows that options are not valid.
+var ErrFindImage = errors.New("neither *ID* nor *Repo* are provided")
+
+// FindImageOptions defines search config.
+type FindImageOptions struct {
+	ID   string
+	Repo string
+	Tag  string
+}
+
+// FindImage selects images by tag prefix.
+func FindImage(cli client.ImageAPIClient, options FindImageOptions) (*ImageInfo, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
 		return nil, err
 	}
 
-	tag := filterImagesByTag(tagPrefix, images)
-	if tag == nil {
-		return nil, fmt.Errorf("image %s is not found", tagPrefix)
+	if options.ID != "" {
+		return findImageByID(options.ID, images), nil
 	}
-	return tag, nil
+	if options.Repo != "" {
+		list := filterImagesByRepo(options.Repo, images)
+		if options.Tag != "" {
+			return findImageByTag(options.Tag, list), nil
+		}
+		return findNewestImage(list), nil
+	}
+	return nil, ErrFindImage
 }
