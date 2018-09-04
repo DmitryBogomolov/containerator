@@ -93,17 +93,17 @@ func findImageByTag(tag string, images []*types.ImageSummary) *ImageInfo {
 	return nil
 }
 
-// ErrFindImage shows that options are not valid.
+// ErrFindImage shows that search options are not valid.
 var ErrFindImage = errors.New("neither *ID* nor *Repo* are provided")
 
-// FindImageOptions defines search config.
+// FindImageOptions defines search options.
 type FindImageOptions struct {
 	ID   string
 	Repo string
 	Tag  string
 }
 
-// FindImage selects images by tag prefix.
+// FindImage searches image.
 func FindImage(cli client.ImageAPIClient, options FindImageOptions) (*ImageInfo, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
