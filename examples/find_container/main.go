@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/DmitryBogomolov/containerator"
@@ -8,19 +9,46 @@ import (
 )
 
 func main() {
+	id := flag.String("id", "", "id")
+	name := flag.String("name", "", "name")
+	imageID := flag.String("image-id", "", "image id")
+	flag.Parse()
+
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		panic(err)
 	}
 
-	container, err := containerator.FindContainer(cli, containerator.FindContainerOptions{
-		ID: "test",
-	})
-	if err != nil {
-		fmt.Println(err)
-	} else if container == nil {
-		fmt.Println("container is not found")
-	} else {
-		fmt.Printf("%s %s %s %s\n", container.ID, container.Name, container.Image, container.State)
+	if *id != "" {
+		container, err := containerator.FindContainerByID(cli, *id)
+		if err != nil {
+			panic(err)
+		}
+		if container == nil {
+			fmt.Println("Not found")
+		} else {
+			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
+		}
+	}
+	if *name != "" {
+		container, err := containerator.FindContainerByName(cli, *name)
+		if err != nil {
+			panic(err)
+		}
+		if container == nil {
+			fmt.Println("Not found")
+		} else {
+			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
+		}
+	}
+	if *imageID != "" {
+		containers, err := containerator.FindContainersByImageID(cli, *imageID)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Containers:")
+		for _, container := range containers {
+			fmt.Printf("  %s\n", containerator.GetContainerName(container))
+		}
 	}
 }

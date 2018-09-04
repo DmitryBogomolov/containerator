@@ -29,31 +29,18 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
+		expectedContainer := types.Container{ID: "cid1"}
 		cli.EXPECT().
-			ContainerInspect(gomock.Any(), "cid1").
-			Return(types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					ID:    "id-1",
-					Name:  "name-1",
-					Image: "image-1",
-					State: &types.ContainerState{
-						Status: "status-1",
-					},
-				},
-			}, nil)
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{expectedContainer}, nil)
 
-		cont, err := RunContainer(cli, &ContainerOptions{
+		cont, err := RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 		})
 
 		assertEqual(t, err, nil, "error")
-		assertEqual(t, *cont, ContainerInfo{
-			ID:    "id-1",
-			Name:  "name-1",
-			Image: "image-1",
-			State: "status-1",
-		}, "container")
+		assertEqual(t, cont.ID, expectedContainer.ID, "container")
 	})
 
 	t.Run("VolumesAndPorts", func(t *testing.T) {
@@ -93,14 +80,12 @@ func TestRunContainer(t *testing.T) {
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
 		cli.EXPECT().
-			ContainerInspect(gomock.Any(), "cid1").
-			Return(types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					State: &types.ContainerState{},
-				},
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
 			}, nil)
 
-		RunContainer(cli, &ContainerOptions{
+		RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 			Volumes: map[string]string{
@@ -123,19 +108,19 @@ func TestRunContainer(t *testing.T) {
 				&container.HostConfig{},
 				nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
-		expected := errors.New("error-on-start")
+		expectedErr := errors.New("error-on-start")
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
-			Return(expected)
+			Return(expectedErr)
 		cli.EXPECT().
 			ContainerRemove(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
 
-		_, err := RunContainer(cli, &ContainerOptions{
+		_, err := RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 		})
 
-		assertEqual(t, err, expected, "error")
+		assertEqual(t, err, expectedErr, "error")
 	})
 }

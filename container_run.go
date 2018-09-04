@@ -3,14 +3,15 @@ package containerator
 import (
 	"fmt"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
-// ContainerOptions contains options for container.
-type ContainerOptions struct {
+// RunContainerOptions contains options for container.
+type RunContainerOptions struct {
 	Image   string
 	Name    string
 	Volumes map[string]string
@@ -49,7 +50,7 @@ func buildMounts(options map[string]string) []mount.Mount {
 }
 
 // RunContainer creates and starts container.
-func RunContainer(cli client.ContainerAPIClient, options *ContainerOptions) (*ContainerInfo, error) {
+func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (*types.Container, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 	config.Image = options.Image
@@ -61,8 +62,8 @@ func RunContainer(cli client.ContainerAPIClient, options *ContainerOptions) (*Co
 	}
 	err = cliContainerStart(cli, body.ID)
 	if err != nil {
-		removeContainer(cli, body.ID)
+		cliContainerRemove(cli, body.ID)
 		return nil, err
 	}
-	return inspectContainer(cli, body.ID)
+	return FindContainerByID(cli, body.ID)
 }

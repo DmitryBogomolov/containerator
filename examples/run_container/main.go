@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	options := &containerator.ContainerOptions{
+	options := &containerator.RunContainerOptions{
 		Image: *imagePtr,
 		Name:  *namePtr,
 	}
@@ -39,9 +39,10 @@ func main() {
 		options.Ports[from] = to
 	}
 
-	cont, err := containerator.RunContainer(cli, options)
+	container, err := containerator.RunContainer(cli, options)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%s %s %s %s\n", cont.Image[7:15], cont.ID[7:15], cont.Name, cont.State)
+	fmt.Printf("%s %s %s %s\n", container.ImageID[7:15], container.ID[7:15],
+		containerator.GetContainerName(container), container.State)
 }
