@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -35,12 +36,16 @@ func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
 	return ports, bindings
 }
 
-func buildVolumes(options map[string]string) []string {
-	var volumes []string
+func buildMounts(options map[string]string) []mount.Mount {
+	var mounts []mount.Mount
 	for from, to := range options {
-		volumes = append(volumes, fmt.Sprintf("%s:%s", from, to))
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: from,
+			Target: to,
+		})
 	}
-	return volumes
+	return mounts
 }
 
 // RunContainer creates and starts container.
@@ -49,7 +54,7 @@ func RunContainer(cli client.ContainerAPIClient, options *ContainerOptions) (*Co
 	hostConfig := container.HostConfig{}
 	config.Image = options.Image
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
-	hostConfig.Binds = buildVolumes(options.Volumes)
+	hostConfig.Mounts = buildMounts(options.Volumes)
 	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)
 	if err != nil {
 		return nil, err

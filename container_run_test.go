@@ -9,6 +9,7 @@ import (
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/golang/mock/gomock"
 )
 
@@ -73,9 +74,17 @@ func TestRunContainer(t *testing.T) {
 						"1000/tcp": []nat.PortBinding{nat.PortBinding{HostIP: "0.0.0.0", HostPort: "1001"}},
 						"2000/tcp": []nat.PortBinding{nat.PortBinding{HostIP: "0.0.0.0", HostPort: "2001"}},
 					},
-					Binds: []string{
-						"/src1:/dst1",
-						"/src2:/dst2",
+					Mounts: []mount.Mount{
+						mount.Mount{
+							Type:   mount.TypeBind,
+							Source: "/src1",
+							Target: "/dst1",
+						},
+						mount.Mount{
+							Type:   mount.TypeBind,
+							Source: "/src2",
+							Target: "/dst2",
+						},
 					},
 				},
 				nil, "container-1").
