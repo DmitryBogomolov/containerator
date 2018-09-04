@@ -23,6 +23,12 @@ func cliImageList(cli client.ImageAPIClient) ([]types.ImageSummary, error) {
 	return cli.ImageList(ctx, types.ImageListOptions{})
 }
 
+func cliContainerList(cli client.ContainerAPIClient) ([]types.Container, error) {
+	ctx, cancel := getContext()
+	defer cancel()
+	return cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+}
+
 func cliContainerCreate(cli client.ContainerAPIClient, config *container.Config, hostConfig *container.HostConfig, containerName string) (container.ContainerCreateCreatedBody, error) {
 	ctx, cancel := getContext()
 	defer cancel()
