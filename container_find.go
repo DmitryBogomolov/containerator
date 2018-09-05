@@ -33,10 +33,10 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 	if err != nil {
 		return nil, err
 	}
-	name = "/" + name
+	val := "/" + name
 	for i, container := range containers {
 		for _, item := range container.Names {
-			if item == name {
+			if item == val {
 				return &containers[i], nil
 			}
 		}

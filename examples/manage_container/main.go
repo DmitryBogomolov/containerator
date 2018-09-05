@@ -72,7 +72,7 @@ func main() {
 
 	containerName := fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
 
-	fmt.Printf("Image: %s\n", containerator.GetImageName(image))
+	fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
 	fmt.Printf("Container: %s\n", containerName)
 
 	container, err := containerator.FindContainerByName(cli, containerName)

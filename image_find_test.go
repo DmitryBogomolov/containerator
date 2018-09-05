@@ -8,13 +8,23 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
+func TestGetImageFullName(t *testing.T) {
+	var name string
+
+	name = GetImageFullName(&types.ImageSummary{RepoTags: []string{}})
+	assertEqual(t, name, "", "name")
+
+	name = GetImageFullName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
+	assertEqual(t, name, "a:1", "name")
+}
+
 func TestGetImageName(t *testing.T) {
 	var name string
 
 	name = GetImageName(&types.ImageSummary{RepoTags: []string{}})
 	assertEqual(t, name, "", "name")
 
-	name = GetImageName(&types.ImageSummary{RepoTags: []string{"a", "b"}})
+	name = GetImageName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
 	assertEqual(t, name, "a", "name")
 }
 
@@ -65,7 +75,7 @@ func TestFindImage(t *testing.T) {
 		var image *types.ImageSummary
 		var err error
 
-		image, err = FindImageByRepoTag(cli, "test:latest")
+		image, err = FindImageByRepoTag(cli, "test")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, image, &testImages[0], "image")
 

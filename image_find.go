@@ -7,12 +7,21 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// GetImageName returns friendly image name.
-func GetImageName(image *types.ImageSummary) string {
+// GetImageFullName returns full image name.
+func GetImageFullName(image *types.ImageSummary) string {
 	if len(image.RepoTags) > 0 {
 		return image.RepoTags[0]
 	}
 	return ""
+}
+
+func extractRepo(repoTag string) string {
+	return strings.Split(repoTag, ":")[0]
+}
+
+// GetImageName returns friendly image name.
+func GetImageName(image *types.ImageSummary) string {
+	return extractRepo(GetImageFullName(image))
 }
 
 // FindImageByID searches image by id.
@@ -35,9 +44,13 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 	if err != nil {
 		return nil, err
 	}
+	val := repoTag
+	if extractRepo(val) == val {
+		val = val + ":latest"
+	}
 	for i, image := range images {
 		for _, item := range image.RepoTags {
-			if item == repoTag {
+			if item == val {
 				return &images[i], nil
 			}
 		}
