@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -25,7 +26,7 @@ func main() {
 	modePtr := flag.String("mode", "", "mode")
 	imageNamePtr := flag.String("image", "", "full image name")
 	imageRepoPtr := flag.String("image-repo", "", "image repo")
-	// forcePtr := flag.Bool("force", false, "force container creation")
+	forcePtr := flag.Bool("force", false, "force container creation")
 	flag.Parse()
 
 	cli, err := client.NewEnvClient()
@@ -48,12 +49,8 @@ func main() {
 	} else {
 		repo := *imageRepoPtr
 		if repo == "" {
-			cwd, err := os.Getwd()
-			if err != nil {
-				fmt.Printf("Getwd: %s\n", err)
-			} else {
-				repo = filepath.Base(cwd)
-			}
+			cwd, _ := os.Getwd()
+			repo = filepath.Base(cwd)
 		}
 		images, err := containerator.FindImagesByRepo(cli, repo)
 		if err != nil {
@@ -75,11 +72,51 @@ func main() {
 	fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
 	fmt.Printf("Container: %s\n", containerName)
 
-	container, err := containerator.FindContainerByName(cli, containerName)
+	currentContainer, err := containerator.FindContainerByName(cli, containerName)
 	if err != nil {
 		fmt.Printf("FindContainerByName: %s\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Print(container)
+	if currentContainer != nil && currentContainer.ImageID == image.ID {
+		if !*forcePtr {
+			fmt.Println("Container is already running")
+			os.Exit(0)
+		}
+	}
+
+	options := containerator.RunContainerOptions{}
+
+	if currentContainer != nil {
+		tmpName := containerator.GetContainerName(currentContainer) + ".current"
+		err = cli.ContainerRename(context.Background(), currentContainer.ID, tmpName)
+		if err != nil {
+			fmt.Printf("ContainerRename: %s\n", err)
+			os.Exit(1)
+		}
+		err = cli.ContainerStop(context.Background(), currentContainer.ID, nil)
+		if err != nil {
+			fmt.Printf("ContainerStop: %s\n", err)
+		}
+	}
+
+	nextContainer, err := containerator.RunContainer(cli, &options)
+	if err != nil {
+		fmt.Printf("RunContainer: %s\n", err)
+		if currentContainer != nil {
+			err = cli.ContainerStart(context.Background(), currentContainer.ID, types.ContainerStartOptions{})
+			if err != nil {
+				fmt.Printf("ContainerStart: %s\n", err)
+				os.Exit(1)
+			}
+			err = cli.ContainerRename(context.Background(), currentContainer.ID, containerName)
+			if err != nil {
+				fmt.Printf("ContainerRename: %s\n", err)
+				os.Exit(1)
+			}
+		}
+		os.Exit(1)
+	}
+
+	fmt.Printf("Container: %s %s\n", containerName, nextContainer.ID[:8])
 }
