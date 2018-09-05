@@ -2,6 +2,7 @@ package containerator
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/docker/go-connections/nat"
@@ -88,13 +89,53 @@ func TestRunContainer(t *testing.T) {
 		RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
-			Volumes: map[string]string{
-				"/src1": "/dst1",
-				"/src2": "/dst2",
+			Volumes: []Mapping{
+				Mapping{"/src1", "/dst1"},
+				Mapping{"/src2", "/dst2"},
 			},
-			Ports: map[int]int{
-				1000: 1001,
-				2000: 2001,
+			Ports: []Mapping{
+				Mapping{"1001", "1000"},
+				Mapping{"2001", "2000"},
+			},
+		})
+	})
+
+	t.Run("Env", func(t *testing.T) {
+		cli := test_mocks.NewMockContainerAPIClient(ctrl)
+		os.Setenv("D", "test")
+		defer os.Unsetenv("D")
+		cli.EXPECT().
+			ContainerCreate(
+				gomock.Any(),
+				&container.Config{
+					Image: "image:1",
+					Env: []string{
+						"A=1",
+						"B=",
+						"C=3",
+						"D=test",
+					},
+				},
+				&container.HostConfig{},
+				nil, "container-1").
+			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+		cli.EXPECT().
+			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
+			Return(nil)
+		cli.EXPECT().
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
+			}, nil)
+
+		RunContainer(cli, &RunContainerOptions{
+			Image: "image:1",
+			Name:  "container-1",
+			Env: []Mapping{
+				Mapping{"A", "1"},
+				Mapping{"B", ""},
+				Mapping{"C", "3"},
+				Mapping{"D", ""},
 			},
 		})
 	})

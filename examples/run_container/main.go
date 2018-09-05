@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
@@ -15,6 +14,7 @@ func main() {
 	namePtr := flag.String("name", "", "container name")
 	volumePtr := flag.String("volume", "", "volume")
 	portPtr := flag.String("port", "", "port")
+	envPtr := flag.String("env", "", "environment")
 	flag.Parse()
 
 	cli, err := client.NewEnvClient()
@@ -28,15 +28,23 @@ func main() {
 	}
 	if *volumePtr != "" {
 		list := strings.Split(*volumePtr, ":")
-		options.Volumes = make(map[string]string)
-		options.Volumes[list[0]] = list[1]
+		options.Volumes = []containerator.Mapping{
+			containerator.Mapping{Source: list[0], Target: list[1]},
+		}
 	}
 	if *portPtr != "" {
 		list := strings.Split(*portPtr, ":")
-		options.Ports = make(map[int]int)
-		from, _ := strconv.Atoi(list[0])
-		to, _ := strconv.Atoi(list[1])
-		options.Ports[from] = to
+		options.Ports = []containerator.Mapping{
+			containerator.Mapping{Source: list[0], Target: list[1]},
+		}
+	}
+	if *envPtr != "" {
+		list := strings.Split(*envPtr, "=")
+		mapping := containerator.Mapping{Source: list[0]}
+		if len(list) > 1 {
+			mapping.Target = list[1]
+		}
+		options.Env = []containerator.Mapping{mapping}
 	}
 
 	container, err := containerator.RunContainer(cli, options)

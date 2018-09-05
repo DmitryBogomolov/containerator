@@ -2,6 +2,7 @@ package containerator
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -10,26 +11,33 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+// Mapping defines source-target pair.
+type Mapping struct {
+	Source string
+	Target string
+}
+
 // RunContainerOptions contains options for container.
 type RunContainerOptions struct {
 	Image   string
 	Name    string
-	Volumes map[string]string
-	Ports   map[int]int
+	Volumes []Mapping
+	Ports   []Mapping
+	Env     []Mapping
 }
 
-func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
+func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
 	if len(options) == 0 {
 		return nil, nil
 	}
 	ports := make(nat.PortSet)
 	bindings := make(nat.PortMap)
 	var dummy struct{}
-	for from, to := range options {
-		key := nat.Port(fmt.Sprintf("%d/tcp", from))
+	for _, mapping := range options {
+		key := nat.Port(fmt.Sprintf("%s/tcp", mapping.Target))
 		ports[key] = dummy
 		val := nat.PortBinding{
-			HostPort: fmt.Sprintf("%d", to),
+			HostPort: fmt.Sprintf("%s", mapping.Source),
 			HostIP:   "0.0.0.0",
 		}
 		bindings[key] = []nat.PortBinding{val}
@@ -37,16 +45,29 @@ func buildPortBindings(options map[int]int) (nat.PortSet, nat.PortMap) {
 	return ports, bindings
 }
 
-func buildMounts(options map[string]string) []mount.Mount {
+func buildMounts(options []Mapping) []mount.Mount {
 	var mounts []mount.Mount
-	for from, to := range options {
+	for _, mapping := range options {
 		mounts = append(mounts, mount.Mount{
 			Type:   mount.TypeBind,
-			Source: from,
-			Target: to,
+			Source: mapping.Source,
+			Target: mapping.Target,
 		})
 	}
 	return mounts
+}
+
+func buildEnvironment(options []Mapping) []string {
+	var env []string
+	for _, mapping := range options {
+		name := mapping.Source
+		value := mapping.Target
+		if value == "" {
+			value = os.Getenv(name)
+		}
+		env = append(env, fmt.Sprintf("%s=%s", name, value))
+	}
+	return env
 }
 
 // RunContainer creates and starts container.
@@ -55,6 +76,7 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	hostConfig := container.HostConfig{}
 	config.Image = options.Image
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
+	config.Env = buildEnvironment(options.Env)
 	hostConfig.Mounts = buildMounts(options.Volumes)
 	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)
 	if err != nil {
