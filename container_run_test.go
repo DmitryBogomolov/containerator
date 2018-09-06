@@ -3,6 +3,7 @@ package containerator
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/docker/go-connections/nat"
@@ -137,6 +138,42 @@ func TestRunContainer(t *testing.T) {
 				Mapping{"C", "3"},
 				Mapping{"D", ""},
 			},
+		})
+	})
+
+	t.Run("EnvReader", func(t *testing.T) {
+		cli := test_mocks.NewMockContainerAPIClient(ctrl)
+		cli.EXPECT().
+			ContainerCreate(
+				gomock.Any(),
+				&container.Config{
+					Image: "image:1",
+					Env: []string{
+						"A=0",
+						"A=1",
+						"B=2",
+					},
+				},
+				&container.HostConfig{},
+				nil, "container-1").
+			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+		cli.EXPECT().
+			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
+			Return(nil)
+		cli.EXPECT().
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
+			}, nil)
+
+		RunContainer(cli, &RunContainerOptions{
+			Image: "image:1",
+			Name:  "container-1",
+			Env: []Mapping{
+				Mapping{"A", "1"},
+				Mapping{"B", "2"},
+			},
+			EnvReader: strings.NewReader("#test\nA=0\n"),
 		})
 	})
 

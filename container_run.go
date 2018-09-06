@@ -2,7 +2,10 @@ package containerator
 
 import (
 	"fmt"
+	"io"
 	"os"
+
+	"github.com/joho/godotenv"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -19,11 +22,12 @@ type Mapping struct {
 
 // RunContainerOptions contains options for container.
 type RunContainerOptions struct {
-	Image   string
-	Name    string
-	Volumes []Mapping
-	Ports   []Mapping
-	Env     []Mapping
+	Image     string
+	Name      string
+	Volumes   []Mapping
+	Ports     []Mapping
+	Env       []Mapping
+	EnvReader io.Reader
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
@@ -57,17 +61,26 @@ func buildMounts(options []Mapping) []mount.Mount {
 	return mounts
 }
 
-func buildEnvironment(options []Mapping) []string {
-	var env []string
-	for _, mapping := range options {
+func buildEnvironment(env []Mapping, envReader io.Reader) ([]string, error) {
+	var ret []string
+	if envReader != nil {
+		obj, err := godotenv.Parse(envReader)
+		if err != nil {
+			return nil, err
+		}
+		for name, value := range obj {
+			ret = append(ret, fmt.Sprintf("%s=%s", name, value))
+		}
+	}
+	for _, mapping := range env {
 		name := mapping.Source
 		value := mapping.Target
 		if value == "" {
 			value = os.Getenv(name)
 		}
-		env = append(env, fmt.Sprintf("%s=%s", name, value))
+		ret = append(ret, fmt.Sprintf("%s=%s", name, value))
 	}
-	return env
+	return ret, nil
 }
 
 // RunContainer creates and starts container.
@@ -76,7 +89,11 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	hostConfig := container.HostConfig{}
 	config.Image = options.Image
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
-	config.Env = buildEnvironment(options.Env)
+	env, err := buildEnvironment(options.Env, options.EnvReader)
+	if err != nil {
+		return nil, err
+	}
+	config.Env = env
 	hostConfig.Mounts = buildMounts(options.Volumes)
 	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)
 	if err != nil {
