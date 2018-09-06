@@ -33,25 +33,26 @@ func getMode(mode string) string {
 	return strings.ToLower(mode)
 }
 
-func selectImage(imageName string, imageRepo string, workDir string, cli client.ImageAPIClient) *types.ImageSummary {
+func selectImage(imageName string, imageRepo string, workDir string, cli client.ImageAPIClient) (*types.ImageSummary, error) {
 	if imageName != "" {
 		image, err := containerator.FindImageByRepoTag(cli, imageName)
-		if err != nil {
-			log.Fatalf("find image by name: %+v\n", err)
+		if image == nil && err == nil {
+			err = fmt.Errorf("image %s does not exist", imageName)
 		}
-		return image
+		return image, err
+
 	}
 	if imageRepo == "" {
 		imageRepo = filepath.Base(workDir)
 	}
 	images, err := containerator.FindImagesByRepo(cli, imageRepo)
+	if len(images) == 0 && err == nil {
+		err = fmt.Errorf("images %s do not exist", imageRepo)
+	}
 	if err != nil {
-		log.Fatalf("find image by repo: %+v\n", err)
+		return nil, err
 	}
-	if len(images) > 0 {
-		return images[0]
-	}
-	return nil
+	return images[0], nil
 }
 
 func isFileExist(file string) bool {
@@ -113,7 +114,7 @@ func resumeCurrentContainer(container *types.Container, name string, cli client.
 	return nil
 }
 
-func main() {
+func run() error {
 	var workDir string
 	flag.StringVar(&workDir, "dir", "", "project directory")
 	var mode string
@@ -134,14 +135,12 @@ func main() {
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("create client: %+v", err)
-		os.Exit(1)
+		return err
 	}
 
-	image := selectImage(imageName, imageRepo, workDir, cli)
-	if image == nil {
-		log.Println("Image is not selected")
-		os.Exit(1)
+	image, err := selectImage(imageName, imageRepo, workDir, cli)
+	if err != nil {
+		return err
 	}
 
 	containerName := fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
@@ -151,15 +150,12 @@ func main() {
 
 	currentContainer, err := containerator.FindContainerByName(cli, containerName)
 	if err != nil {
-		log.Fatalf("Container is not found: %+v\n", err)
-		os.Exit(1)
+		return err
 	}
 
-	if currentContainer != nil && currentContainer.ImageID == image.ID {
-		if !force {
-			log.Println("Container is already running")
-			return
-		}
+	if currentContainer != nil && currentContainer.ImageID == image.ID && !force {
+		log.Println("Container is already running")
+		return nil
 	}
 
 	options := containerator.RunContainerOptions{}
@@ -171,22 +167,27 @@ func main() {
 
 	if currentContainer != nil {
 		if err := suspendCurrentContainer(currentContainer, cli); err != nil {
-			log.Fatalf("Current container is not stopped: %+v\n", err)
-			os.Exit(1)
+			return err
 		}
 	}
 
 	nextContainer, err := containerator.RunContainer(cli, &options)
 	if err != nil {
-		log.Printf("Container is not started: %+v\n", err)
 		if currentContainer != nil {
 			if err := resumeCurrentContainer(currentContainer, containerName, cli); err != nil {
-				log.Fatalf("Current container is not started: %+v\n", err)
-				os.Exit(1)
+				return err
 			}
 		}
-		os.Exit(1)
+		return err
 	}
 
 	log.Printf("Container: %s %s\n", containerName, nextContainer.ID[:8])
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("%+v\n", err)
+		os.Exit(1)
+	}
 }
