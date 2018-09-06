@@ -28,6 +28,16 @@ func TestGetImageName(t *testing.T) {
 	assertEqual(t, name, "a", "name")
 }
 
+func TestGetImageShortID(t *testing.T) {
+	var id string
+
+	id = GetImageShortID(&types.ImageSummary{ID: ""})
+	assertEqual(t, id, "", "id")
+
+	id = GetImageShortID(&types.ImageSummary{ID: "sha256:01234567890123456789"})
+	assertEqual(t, id, "012345678901", "id")
+}
+
 func TestFindImage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

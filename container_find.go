@@ -13,6 +13,15 @@ func GetContainerName(container *types.Container) string {
 	return ""
 }
 
+// GetContainerShortID return short container id.
+func GetContainerShortID(container *types.Container) string {
+	id := container.ID
+	if id != "" {
+		return id[:12]
+	}
+	return ""
+}
+
 // FindContainerByID searches container by id.
 func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
 	containers, err := cliContainerList(cli)

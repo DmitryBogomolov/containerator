@@ -19,6 +19,16 @@ func TestGetContainerName(t *testing.T) {
 	assertEqual(t, name, "c1", "name")
 }
 
+func TestGetContainerShortID(t *testing.T) {
+	var id string
+
+	id = GetContainerShortID(&types.Container{ID: ""})
+	assertEqual(t, id, "", "id")
+
+	id = GetContainerShortID(&types.Container{ID: "01234567890123456789"})
+	assertEqual(t, id, "012345678901", "id")
+}
+
 func TestFindContainer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

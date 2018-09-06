@@ -24,6 +24,15 @@ func GetImageName(image *types.ImageSummary) string {
 	return extractRepo(GetImageFullName(image))
 }
 
+// GetImageShortID returns short image id.
+func GetImageShortID(image *types.ImageSummary) string {
+	id := image.ID
+	if id != "" {
+		return id[7:19]
+	}
+	return ""
+}
+
 // FindImageByID searches image by id.
 func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, error) {
 	images, err := cliImageList(cli)
