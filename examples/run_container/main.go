@@ -18,6 +18,9 @@ func main() {
 	volumePtr := flag.String("volume", "", "volume")
 	portPtr := flag.String("port", "", "port")
 	envPtr := flag.String("env", "", "environment")
+	var restart string
+	flag.StringVar(&restart, "restart", "", "restart policy")
+
 	flag.Parse()
 
 	cli, err := client.NewEnvClient()
@@ -49,6 +52,7 @@ func main() {
 		}
 		options.Env = []containerator.Mapping{mapping}
 	}
+	options.RestartPolicy = containerator.RestartPolicy(restart)
 
 	container, err := containerator.RunContainer(cli, options)
 	if err != nil {
