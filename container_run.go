@@ -28,6 +28,9 @@ type RunContainerOptions struct {
 	Ports     []Mapping
 	Env       []Mapping
 	EnvReader io.Reader
+	// TODO: Add network and restart policy.
+	// Restart	string
+	// Network	string
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {

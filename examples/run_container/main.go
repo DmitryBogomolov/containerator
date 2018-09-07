@@ -9,6 +9,9 @@ import (
 	"github.com/docker/docker/client"
 )
 
+// TODO: Use flag.StringVar
+// TODO: Use custom flag for `port`, `volume`, `env`
+// TODO: Add `env-file`
 func main() {
 	imagePtr := flag.String("image", "", "image name")
 	namePtr := flag.String("name", "", "container name")
