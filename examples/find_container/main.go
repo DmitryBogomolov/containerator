@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
+// TODO: Use flag.StringVar
 func main() {
 	id := flag.String("id", "", "id")
 	name := flag.String("name", "", "name")
