@@ -39,8 +39,7 @@ type RunContainerOptions struct {
 	Env           []Mapping
 	EnvReader     io.Reader
 	RestartPolicy RestartPolicy
-	// TODO: Add network.
-	// Network	string
+	Network       string
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
@@ -111,6 +110,9 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	hostConfig.Mounts = buildMounts(options.Volumes)
 	if options.RestartPolicy != "" {
 		hostConfig.RestartPolicy.Name = string(options.RestartPolicy)
+	}
+	if options.Network != "" {
+		hostConfig.NetworkMode = container.NetworkMode(options.Network)
 	}
 
 	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)

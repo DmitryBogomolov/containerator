@@ -20,6 +20,8 @@ func main() {
 	envPtr := flag.String("env", "", "environment")
 	var restart string
 	flag.StringVar(&restart, "restart", "", "restart policy")
+	var network string
+	flag.StringVar(&network, "network", "", "network")
 
 	flag.Parse()
 
@@ -53,6 +55,7 @@ func main() {
 		options.Env = []containerator.Mapping{mapping}
 	}
 	options.RestartPolicy = containerator.RestartPolicy(restart)
+	options.Network = network
 
 	container, err := containerator.RunContainer(cli, options)
 	if err != nil {

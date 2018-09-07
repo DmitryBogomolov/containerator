@@ -230,4 +230,31 @@ func TestRunContainer(t *testing.T) {
 			RestartPolicy: RestartOnFailure,
 		})
 	})
+
+	t.Run("Network", func(t *testing.T) {
+		cli := test_mocks.NewMockContainerAPIClient(ctrl)
+		cli.EXPECT().
+			ContainerCreate(
+				gomock.Any(),
+				&container.Config{Image: "image:1"},
+				&container.HostConfig{
+					NetworkMode: container.NetworkMode("test-net"),
+				},
+				nil, "container-1").
+			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+		cli.EXPECT().
+			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
+			Return(nil)
+		cli.EXPECT().
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
+			}, nil)
+
+		RunContainer(cli, &RunContainerOptions{
+			Image:   "image:1",
+			Name:    "container-1",
+			Network: "test-net",
+		})
+	})
 }
