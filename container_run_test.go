@@ -45,6 +45,31 @@ func TestRunContainer(t *testing.T) {
 		assertEqual(t, cont.ID, expectedContainer.ID, "container")
 	})
 
+	t.Run("RemoveNonStarted", func(t *testing.T) {
+		cli := test_mocks.NewMockContainerAPIClient(ctrl)
+		cli.EXPECT().
+			ContainerCreate(
+				gomock.Any(),
+				&container.Config{Image: "image:1"},
+				&container.HostConfig{},
+				nil, "container-1").
+			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+		expectedErr := errors.New("error-on-start")
+		cli.EXPECT().
+			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
+			Return(expectedErr)
+		cli.EXPECT().
+			ContainerRemove(gomock.Any(), "cid1", gomock.Any()).
+			Return(nil)
+
+		_, err := RunContainer(cli, &RunContainerOptions{
+			Image: "image:1",
+			Name:  "container-1",
+		})
+
+		assertEqual(t, err, expectedErr, "error")
+	})
+
 	t.Run("VolumesAndPorts", func(t *testing.T) {
 		cli := test_mocks.NewMockContainerAPIClient(ctrl)
 		var dummy struct{}
@@ -177,28 +202,59 @@ func TestRunContainer(t *testing.T) {
 		})
 	})
 
-	t.Run("RemoveNonStarted", func(t *testing.T) {
+	t.Run("RestartPolicy", func(t *testing.T) {
 		cli := test_mocks.NewMockContainerAPIClient(ctrl)
 		cli.EXPECT().
 			ContainerCreate(
 				gomock.Any(),
 				&container.Config{Image: "image:1"},
-				&container.HostConfig{},
+				&container.HostConfig{
+					RestartPolicy: container.RestartPolicy{
+						Name: "on-failure",
+					},
+				},
 				nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
-		expectedErr := errors.New("error-on-start")
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
-			Return(expectedErr)
-		cli.EXPECT().
-			ContainerRemove(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
+		cli.EXPECT().
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
+			}, nil)
 
-		_, err := RunContainer(cli, &RunContainerOptions{
-			Image: "image:1",
-			Name:  "container-1",
+		RunContainer(cli, &RunContainerOptions{
+			Image:         "image:1",
+			Name:          "container-1",
+			RestartPolicy: RestartOnFailure,
 		})
+	})
 
-		assertEqual(t, err, expectedErr, "error")
+	t.Run("Network", func(t *testing.T) {
+		cli := test_mocks.NewMockContainerAPIClient(ctrl)
+		cli.EXPECT().
+			ContainerCreate(
+				gomock.Any(),
+				&container.Config{Image: "image:1"},
+				&container.HostConfig{
+					NetworkMode: container.NetworkMode("test-net"),
+				},
+				nil, "container-1").
+			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+		cli.EXPECT().
+			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
+			Return(nil)
+		cli.EXPECT().
+			ContainerList(gomock.Any(), gomock.Any()).
+			Return([]types.Container{
+				types.Container{},
+			}, nil)
+
+		RunContainer(cli, &RunContainerOptions{
+			Image:   "image:1",
+			Name:    "container-1",
+			Network: "test-net",
+		})
 	})
 }

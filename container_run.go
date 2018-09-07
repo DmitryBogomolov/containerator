@@ -20,17 +20,26 @@ type Mapping struct {
 	Target string
 }
 
+// RestartPolicy defines container restart policy.
+type RestartPolicy string
+
+// RestartPolicy values.
+const (
+	RestartOnFailure     RestartPolicy = "on-failure"
+	RestartUnlessStopped RestartPolicy = "unless-stopped"
+	RestartAlways        RestartPolicy = "always"
+)
+
 // RunContainerOptions contains options for container.
 type RunContainerOptions struct {
-	Image     string
-	Name      string
-	Volumes   []Mapping
-	Ports     []Mapping
-	Env       []Mapping
-	EnvReader io.Reader
-	// TODO: Add network and restart policy.
-	// Restart	string
-	// Network	string
+	Image         string
+	Name          string
+	Volumes       []Mapping
+	Ports         []Mapping
+	Env           []Mapping
+	EnvReader     io.Reader
+	RestartPolicy RestartPolicy
+	Network       string
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
@@ -90,6 +99,7 @@ func buildEnvironment(env []Mapping, envReader io.Reader) ([]string, error) {
 func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (*types.Container, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
+
 	config.Image = options.Image
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
 	env, err := buildEnvironment(options.Env, options.EnvReader)
@@ -98,6 +108,13 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	}
 	config.Env = env
 	hostConfig.Mounts = buildMounts(options.Volumes)
+	if options.RestartPolicy != "" {
+		hostConfig.RestartPolicy.Name = string(options.RestartPolicy)
+	}
+	if options.Network != "" {
+		hostConfig.NetworkMode = container.NetworkMode(options.Network)
+	}
+
 	body, err := cliContainerCreate(cli, &config, &hostConfig, options.Name)
 	if err != nil {
 		return nil, err
