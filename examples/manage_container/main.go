@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -26,7 +28,7 @@ func getWorkDir(option string) string {
 	return option
 }
 
-func getMode(mode string) string {
+func selectMode(mode string) string {
 	if mode == "" {
 		return "dev"
 	}
@@ -78,19 +80,18 @@ func selectEnvFile(workDir string, mode string) string {
 	return ""
 }
 
-func getEnvFileReader(workDir string, mode string) *os.File {
-	envFileName := getEnvFileName(workDir, mode)
-	if envFileName != "" {
-		file, err := os.Open(envFileName)
-		if err != nil {
-			log.Printf("failed to read env file: %+v", err)
-		} else {
-			return file
-		}
-	} else {
+func getEnvFileReader(workDir string, mode string) io.Reader {
+	envFileName := selectEnvFile(workDir, mode)
+	if envFileName == "" {
 		log.Println("env file is not found")
+		return nil
 	}
-	return nil
+	data, err := ioutil.ReadFile(envFileName)
+	if err != nil {
+		log.Printf("failed to read env file: %+v", err)
+		return nil
+	}
+	return strings.NewReader(string(data))
 }
 
 func suspendCurrentContainer(container *types.Container, cli client.ContainerAPIClient) error {
@@ -114,23 +115,47 @@ func resumeCurrentContainer(container *types.Container, name string, cli client.
 	return nil
 }
 
+func updateContainer(options *containerator.RunContainerOptions, current *types.Container,
+	cli client.ContainerAPIClient) (*types.Container, error) {
+	if current != nil {
+		if err := suspendCurrentContainer(current, cli); err != nil {
+			return nil, err
+		}
+	}
+
+	nextContainer, err := containerator.RunContainer(cli, options)
+	if err != nil {
+		if current != nil {
+			if err := resumeCurrentContainer(current, containerator.GetContainerName(current), cli); err != nil {
+				return nil, err
+			}
+		}
+		return nil, err
+	}
+
+	return nextContainer, nil
+}
+
 func run() error {
 	var workDir string
 	flag.StringVar(&workDir, "dir", "", "project directory")
 	var mode string
 	flag.StringVar(&mode, "mode", "", "mode")
 	var imageName string
-	flag.StringVar(&imageName, "image", "", "full image name")
+	flag.StringVar(&imageName, "image", "", "image name")
 	var imageRepo string
 	flag.StringVar(&imageRepo, "image-repo", "", "image repo")
+	var containerName string
+	flag.StringVar(&containerName, "container", "", "container name")
 	var force bool
 	flag.BoolVar(&force, "force", false, "force container creation")
+
 	flag.Parse()
 
 	workDir = getWorkDir(workDir)
 	log.Printf("Directory: %s\n", workDir)
 
-	mode = getMode(mode)
+	mode = selectMode(mode)
 	log.Printf("Mode: %s\n", mode)
 
 	cli, err := client.NewEnvClient()
@@ -143,7 +168,17 @@ func run() error {
 		return err
 	}
 
-	containerName := fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
+	if containerName == "" {
+		containerName = fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
+	}
+
+	options := &containerator.RunContainerOptions{
+		Image: image.ID,
+		Name:  containerName,
+	}
+	if reader := getEnvFileReader(workDir, mode); reader != nil {
+		options.EnvReader = reader
+	}
 
 	log.Printf("Image: %s\n", containerator.GetImageFullName(image))
 	log.Printf("Container: %s\n", containerName)
@@ -152,36 +187,18 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
 	if currentContainer != nil && currentContainer.ImageID == image.ID && !force {
 		log.Println("Container is already running")
 		return nil
 	}
 
-	options := containerator.RunContainerOptions{}
-
-	if envReader := getEnvFileReader(workDir, mode); envReader != nil {
-		defer envReader.Close()
-		options.EnvReader = envReader
-	}
-
-	if currentContainer != nil {
-		if err := suspendCurrentContainer(currentContainer, cli); err != nil {
-			return err
-		}
-	}
-
-	nextContainer, err := containerator.RunContainer(cli, &options)
+	nextContainer, err := updateContainer(options, currentContainer, cli)
 	if err != nil {
-		if currentContainer != nil {
-			if err := resumeCurrentContainer(currentContainer, containerName, cli); err != nil {
-				return err
-			}
-		}
 		return err
 	}
+	log.Printf("Container: %s %s\n", containerator.GetContainerName(nextContainer),
+		containerator.GetContainerShortID(nextContainer))
 
-	log.Printf("Container: %s %s\n", containerName, nextContainer.ID[:8])
 	return nil
 }
 
