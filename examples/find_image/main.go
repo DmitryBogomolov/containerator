@@ -1,27 +1,54 @@
 package main
 
 import (
-	"errors"
+	"flag"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/client"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		panic(errors.New("tag is not defined"))
-	}
+	id := flag.String("id", "", "id")
+	repoTag := flag.String("repo-tag", "", "repo tag")
+	repo := flag.String("repo", "", "repo")
+	flag.Parse()
+
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		panic(err)
 	}
-	image, err := containerator.FindImageByTag(cli, os.Args[1])
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Printf("%s %s %v\n", image.ID[7:15], image.Tag, time.Unix(image.Created, 0))
+
+	if *id != "" {
+		image, err := containerator.FindImageByID(cli, *id)
+		if err != nil {
+			panic(err)
+		}
+		if image == nil {
+			fmt.Println("Not found")
+		} else {
+			fmt.Printf("Image: %s\n", containerator.GetImageName(image))
+		}
+	}
+	if *repoTag != "" {
+		image, err := containerator.FindImageByRepoTag(cli, *repoTag)
+		if err != nil {
+			panic(err)
+		}
+		if image == nil {
+			fmt.Println("Not found")
+		} else {
+			fmt.Printf("Image: %s\n", containerator.GetImageName(image))
+		}
+	}
+	if *repo != "" {
+		images, err := containerator.FindImagesByRepo(cli, *repo)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Images:")
+		for _, image := range images {
+			fmt.Printf("  %s\n", containerator.GetImageName(image))
+		}
 	}
 }
