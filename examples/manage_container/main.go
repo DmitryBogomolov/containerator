@@ -173,7 +173,7 @@ func run() error {
 	}
 
 	options := &containerator.RunContainerOptions{
-		Image: image.ID,
+		Image: containerator.GetImageFullName(image),
 		Name:  containerName,
 	}
 	if reader := getEnvFileReader(workDir, mode); reader != nil {
