@@ -1,6 +1,8 @@
 package containerator
 
 import (
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -15,11 +17,7 @@ func GetContainerName(container *types.Container) string {
 
 // GetContainerShortID return short container id.
 func GetContainerShortID(container *types.Container) string {
-	id := container.ID
-	if id != "" {
-		return id[:shortIDLength]
-	}
-	return ""
+	return container.ID[:shortIDLength]
 }
 
 // FindContainerByID searches container by id.
@@ -30,6 +28,20 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 	}
 	for i, container := range containers {
 		if container.ID == id {
+			return &containers[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// FindContainerByShortID searches container by short id.
+func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
+	containers, err := cliContainerList(cli)
+	if err != nil {
+		return nil, err
+	}
+	for i, container := range containers {
+		if strings.HasPrefix(container.ID, id) {
 			return &containers[i], nil
 		}
 	}

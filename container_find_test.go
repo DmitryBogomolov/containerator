@@ -22,9 +22,6 @@ func TestGetContainerName(t *testing.T) {
 func TestGetContainerShortID(t *testing.T) {
 	var id string
 
-	id = GetContainerShortID(&types.Container{ID: ""})
-	assertEqual(t, id, "", "id")
-
 	id = GetContainerShortID(&types.Container{ID: "01234567890123456789"})
 	assertEqual(t, id, "012345678901", "id")
 }
@@ -35,27 +32,27 @@ func TestFindContainer(t *testing.T) {
 
 	testContainers := []types.Container{
 		types.Container{
-			ID:      "c1",
+			ID:      "00112233445566778899",
 			Names:   []string{"/tester-1", "/tester-1a"},
 			ImageID: "i1",
 		},
 		types.Container{
-			ID:      "c2",
+			ID:      "11223344556677889900",
 			Names:   []string{},
 			ImageID: "i2",
 		},
 		types.Container{
-			ID:      "c3",
+			ID:      "22334455667788990011",
 			Names:   []string{"/tester-3"},
 			ImageID: "i2",
 		},
 		types.Container{
-			ID:      "c4",
+			ID:      "33445566778899001122",
 			Names:   []string{"/tester-4", "/tester-4a", "/tester-4b"},
 			ImageID: "i1",
 		},
 		types.Container{
-			ID:      "c5",
+			ID:      "44556677889900112233",
 			Names:   []string{},
 			ImageID: "i2",
 		},
@@ -68,13 +65,26 @@ func TestFindContainer(t *testing.T) {
 		var cont *types.Container
 		var err error
 
-		cont, err = FindContainerByID(cli, "c3")
+		cont, err = FindContainerByID(cli, "22334455667788990011")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, cont, &testContainers[2], "container")
 
-		cont, err = FindContainerByID(cli, "c5")
+		cont, err = FindContainerByID(cli, "44556677889900112233")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, cont, &testContainers[4], "container")
+
+		cont, err = FindContainerByID(cli, "unknown")
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, cont, nil, "container")
+	})
+
+	t.Run("ByShortID", func(t *testing.T) {
+		var cont *types.Container
+		var err error
+
+		cont, err = FindContainerByShortID(cli, "3344")
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, cont, &testContainers[3], "container")
 
 		cont, err = FindContainerByID(cli, "unknown")
 		assertEqual(t, err, nil, "error")
