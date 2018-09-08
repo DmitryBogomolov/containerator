@@ -47,12 +47,12 @@ func run() error {
 	flag.StringVar(&imageName, "image", "", "image name")
 	var containerName string
 	flag.StringVar(&containerName, "name", "", "container name")
-	var volumes mapping
-	flag.Var(&volumes, "volume", "volume")
-	var ports mapping
-	flag.Var(&ports, "port", "port")
-	var env envMapping
-	flag.Var(&env, "env", "environment")
+	volumes := containerator.NewMappingListVar(":", false)
+	flag.Var(volumes, "volume", "volume")
+	ports := containerator.NewMappingListVar(":", false)
+	flag.Var(ports, "port", "port")
+	env := containerator.NewMappingListVar("=", true)
+	flag.Var(env, "env", "environment")
 	var envFile string
 	flag.StringVar(&envFile, "env-file", "", "env file")
 	var restart string
@@ -71,15 +71,9 @@ func run() error {
 		Image: imageName,
 		Name:  containerName,
 	}
-	if len(volumes.list) > 0 {
-		options.Volumes = volumes.list
-	}
-	if len(ports.list) > 0 {
-		options.Ports = ports.list
-	}
-	if len(env.mapping.list) > 0 {
-		options.Env = env.list
-	}
+	options.Volumes = volumes.Get()
+	options.Ports = ports.Get()
+	options.Env = env.Get()
 	options.RestartPolicy = containerator.RestartPolicy(restart)
 	options.Network = network
 

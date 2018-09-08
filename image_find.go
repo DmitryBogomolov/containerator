@@ -16,7 +16,7 @@ func GetImageFullName(image *types.ImageSummary) string {
 }
 
 func extractRepo(repoTag string) string {
-	return strings.Split(repoTag, ":")[0]
+	return strings.SplitN(repoTag, ":", 2)[0]
 }
 
 // GetImageName returns friendly image name.
@@ -24,13 +24,14 @@ func GetImageName(image *types.ImageSummary) string {
 	return extractRepo(GetImageFullName(image))
 }
 
+const (
+	imageIDPrefix = "sha256:"
+	shortIDLength = 12
+)
+
 // GetImageShortID returns short image id.
 func GetImageShortID(image *types.ImageSummary) string {
-	id := image.ID
-	if id != "" {
-		return id[7:19]
-	}
-	return ""
+	return image.ID[len(imageIDPrefix) : len(imageIDPrefix)+shortIDLength]
 }
 
 // FindImageByID searches image by id.
@@ -41,6 +42,21 @@ func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, e
 	}
 	for i, image := range images {
 		if image.ID == id {
+			return &images[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// FindImageByShortID searches image by short id.
+func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSummary, error) {
+	images, err := cliImageList(cli)
+	if err != nil {
+		return nil, err
+	}
+	val := imageIDPrefix + id
+	for i, image := range images {
+		if strings.HasPrefix(image.ID, val) {
 			return &images[i], nil
 		}
 	}
