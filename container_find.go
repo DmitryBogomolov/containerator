@@ -17,7 +17,7 @@ func GetContainerName(container *types.Container) string {
 func GetContainerShortID(container *types.Container) string {
 	id := container.ID
 	if id != "" {
-		return id[:12]
+		return id[:shortIDLength]
 	}
 	return ""
 }

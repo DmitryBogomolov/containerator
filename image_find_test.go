@@ -31,9 +31,6 @@ func TestGetImageName(t *testing.T) {
 func TestGetImageShortID(t *testing.T) {
 	var id string
 
-	id = GetImageShortID(&types.ImageSummary{ID: ""})
-	assertEqual(t, id, "", "id")
-
 	id = GetImageShortID(&types.ImageSummary{ID: "sha256:01234567890123456789"})
 	assertEqual(t, id, "012345678901", "id")
 }
@@ -44,19 +41,19 @@ func TestFindImage(t *testing.T) {
 
 	testImages := []types.ImageSummary{
 		types.ImageSummary{
-			ID:       "i1",
+			ID:       "sha256:00112233445566778899",
 			RepoTags: []string{"test:latest", "test:1"},
 		},
 		types.ImageSummary{
-			ID:       "i2",
+			ID:       "sha256:11223344556677889900",
 			RepoTags: []string{},
 		},
 		types.ImageSummary{
-			ID:       "i3",
+			ID:       "sha256:22334455667788990011",
 			RepoTags: []string{"test:2"},
 		},
 		types.ImageSummary{
-			ID:       "i4",
+			ID:       "sha256:33445566778899001122",
 			RepoTags: []string{"test:3", "test:4"},
 		},
 	}
@@ -68,15 +65,28 @@ func TestFindImage(t *testing.T) {
 		var image *types.ImageSummary
 		var err error
 
-		image, err = FindImageByID(cli, "i1")
+		image, err = FindImageByID(cli, "sha256:00112233445566778899")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, image, &testImages[0], "image")
 
-		image, err = FindImageByID(cli, "i2")
+		image, err = FindImageByID(cli, "sha256:11223344556677889900")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, image, &testImages[1], "image")
 
 		image, err = FindImageByID(cli, "unknown")
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, image, nil, "image")
+	})
+
+	t.Run("ByShortID", func(t *testing.T) {
+		var image *types.ImageSummary
+		var err error
+
+		image, err = FindImageByShortID(cli, "0011")
+		assertEqual(t, err, nil, "error")
+		assertEqual(t, image, &testImages[0], "image")
+
+		image, err = FindImageByShortID(cli, "unknown")
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, image, nil, "image")
 	})
