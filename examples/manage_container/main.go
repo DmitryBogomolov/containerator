@@ -136,7 +136,13 @@ func updateContainer(options *containerator.RunContainerOptions, current *types.
 	return nextContainer, nil
 }
 
+const (
+	defaultConfigName = "config.yaml"
+)
+
 func run() error {
+	var configPath string
+	flag.StringVar(&configPath, "config", defaultConfigName, "configuration file")
 	var workDir string
 	flag.StringVar(&workDir, "dir", "", "project directory")
 	var mode string
@@ -151,6 +157,12 @@ func run() error {
 	flag.BoolVar(&force, "force", false, "force container creation")
 
 	flag.Parse()
+
+	config, err := readConfig(configPath)
+	if err != nil {
+		log.Printf("Config is not loaded: %+v\n", err)
+	}
+	fmt.Println(config.ContainerName)
 
 	workDir = getWorkDir(workDir)
 	log.Printf("Directory: %s\n", workDir)
