@@ -214,16 +214,6 @@ func run() error {
 	return nil
 }
 
-// TODO: config - ports, volumes, environment; remove env-file.
-// image: test:10
-// image-repo: test
-// container: tester
-// ports:
-//   - 1000: 2000
-// volumes:
-//   - /data: /tmp
-// environment:
-//   - A: 1
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("%+v\n", err)
