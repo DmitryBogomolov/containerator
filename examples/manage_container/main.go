@@ -138,6 +138,7 @@ func updateContainer(options *containerator.RunContainerOptions, current *types.
 
 const (
 	defaultConfigName = "config.yaml"
+	defaultMode       = "dev"
 )
 
 func run() error {
@@ -146,7 +147,7 @@ func run() error {
 	var workDir string
 	flag.StringVar(&workDir, "dir", "", "project directory")
 	var mode string
-	flag.StringVar(&mode, "mode", "", "mode")
+	flag.StringVar(&mode, "mode", defaultMode, "mode")
 	var imageName string
 	flag.StringVar(&imageName, "image", "", "image name")
 	var imageRepo string
@@ -162,24 +163,37 @@ func run() error {
 	if err != nil {
 		log.Printf("Config is not loaded: %+v\n", err)
 	}
-	fmt.Println(config.ContainerName)
+
+	if imageName != "" {
+		config.ImageName = imageName
+	}
+	if imageRepo != "" {
+		config.ImageRepo = imageRepo
+	}
+	if containerName != "" {
+		config.ContainerName = containerName
+	}
+
+	mode = strings.ToLower(mode)
+	config = buildModeConfig(config, mode)
+	if config == nil {
+		return fmt.Errorf("'%s' mode is not valid", mode)
+	}
 
 	workDir = getWorkDir(workDir)
 	log.Printf("Directory: %s\n", workDir)
-
-	mode = selectMode(mode)
-	log.Printf("Mode: %s\n", mode)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}
 
-	image, err := selectImage(imageName, imageRepo, workDir, cli)
+	image, err := selectImage(config.ImageName, config.ImageRepo, workDir, cli)
 	if err != nil {
 		return err
 	}
 
+	containerName = config.ContainerName
 	if containerName == "" {
 		containerName = fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
 	}
