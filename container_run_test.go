@@ -1,6 +1,7 @@
 package containerator
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -260,6 +261,69 @@ func TestRunContainer(t *testing.T) {
 	})
 }
 
+func TestRunContainerOptionsJSONMarshal(t *testing.T) {
+	options := RunContainerOptions{
+		Image:   "image:1",
+		Name:    "container-1",
+		Network: "network-1",
+		Volumes: []Mapping{
+			Mapping{"/src1", "/dst1"},
+		},
+		Env: []Mapping{
+			Mapping{"A", "1"},
+			Mapping{"B", "2"},
+		},
+	}
+
+	bytes, err := json.MarshalIndent(options, "", "  ")
+	data := string(bytes)
+
+	assertEqual(t, err, nil, "error")
+	expected := strings.Join([]string{
+		`{`,
+		`  "image": "image:1",`,
+		`  "name": "container-1",`,
+		`  "volumes": [`,
+		`    {`,
+		`      "/src1": "/dst1"`,
+		`    }`,
+		`  ],`,
+		`  "env": [`,
+		`    {`,
+		`      "A": "1"`,
+		`    },`,
+		`    {`,
+		`      "B": "2"`,
+		`    }`,
+		`  ],`,
+		`  "network": "network-1"`,
+		`}`,
+	}, "\n")
+	assertEqual(t, data, expected, "data")
+}
+
+func TestRunContainerOptionsJSONUnmarshal(t *testing.T) {
+	data := strings.Join([]string{
+		`{`,
+		`"image": "image:1",`,
+		`"name": "container-1",`,
+		`"env": [`,
+		`{"A": "1" },`,
+		`{ "B": "2" }`,
+		`]`,
+		`}`,
+	}, "\n")
+	var options RunContainerOptions
+
+	err := json.Unmarshal([]byte(data), &options)
+
+	assertEqual(t, err, nil, "error")
+	assertEqual(t, options.Image, "image:1", "options-Image")
+	assertEqual(t, options.Name, "container-1", "options-Name")
+	assertEqual(t, options.Env[0], Mapping{"A", "1"}, "options-Env-1")
+	assertEqual(t, options.Env[1], Mapping{"B", "2"}, "options-Env-2")
+}
+
 func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
 	options := RunContainerOptions{
 		Image:   "image:1",
@@ -274,7 +338,7 @@ func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
 		},
 	}
 
-	bytes, err := yaml.Marshal(&options)
+	bytes, err := yaml.Marshal(options)
 	data := string(bytes)
 
 	assertEqual(t, err, nil, "error")

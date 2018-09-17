@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -18,6 +19,25 @@ import (
 type Mapping struct {
 	Source string
 	Target string
+}
+
+// MarshalJSON implements JSON marshalling.
+func (m Mapping) MarshalJSON() ([]byte, error) {
+	str := fmt.Sprintf(`{"%s":"%s"}`, m.Source, m.Target)
+	return []byte(str), nil
+}
+
+// UnmarshalJSON implements JSON unmarshalling.
+func (m *Mapping) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	str = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(str), "{"), "}")
+	parts := strings.SplitN(str, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("not valid JSON Mapping: %s", data)
+	}
+	m.Source = strings.Trim(strings.TrimSpace(parts[0]), `"`)
+	m.Target = strings.Trim(strings.TrimSpace(parts[1]), `"`)
+	return nil
 }
 
 // MarshalYAML implements YAML marshalling.
@@ -54,14 +74,14 @@ const (
 
 // RunContainerOptions contains options for container.
 type RunContainerOptions struct {
-	Image         string        `yaml:",omitempty"`
-	Name          string        `yaml:",omitempty"`
-	Volumes       []Mapping     `yaml:",omitempty"`
-	Ports         []Mapping     `yaml:",omitempty"`
-	Env           []Mapping     `yaml:",omitempty"`
-	EnvReader     io.Reader     `yaml:"-"`
-	RestartPolicy RestartPolicy `yaml:"restart,omitempty"`
-	Network       string        `yaml:",omitempty"`
+	Image         string        `json:"image,omitempty" yaml:",omitempty"`
+	Name          string        `json:"name,omitempty" yaml:",omitempty"`
+	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`
+	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`
+	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`
+	EnvReader     io.Reader     `json:"-" yaml:"-"`
+	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"`
+	Network       string        `json:"network,omitempty" yaml:",omitempty"`
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
