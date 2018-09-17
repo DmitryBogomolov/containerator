@@ -20,6 +20,28 @@ type Mapping struct {
 	Target string
 }
 
+// MarshalYAML implements YAML marshalling.
+func (m Mapping) MarshalYAML() (interface{}, error) {
+	ret := make(map[string]string)
+	ret[m.Source] = m.Target
+	return ret, nil
+}
+
+// UnmarshalYAML implements YAML unmarshalling.
+func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	tmp := make(map[string]string)
+	err := unmarshal(tmp)
+	if err != nil {
+		return err
+	}
+	for key, val := range tmp {
+		m.Source = key
+		m.Target = val
+		break
+	}
+	return nil
+}
+
 // RestartPolicy defines container restart policy.
 type RestartPolicy string
 
@@ -32,14 +54,14 @@ const (
 
 // RunContainerOptions contains options for container.
 type RunContainerOptions struct {
-	Image         string
-	Name          string
-	Volumes       []Mapping
-	Ports         []Mapping
-	Env           []Mapping
-	EnvReader     io.Reader
-	RestartPolicy RestartPolicy
-	Network       string
+	Image         string        `yaml:",omitempty"`
+	Name          string        `yaml:",omitempty"`
+	Volumes       []Mapping     `yaml:",omitempty"`
+	Ports         []Mapping     `yaml:",omitempty"`
+	Env           []Mapping     `yaml:",omitempty"`
+	EnvReader     io.Reader     `yaml:"-"`
+	RestartPolicy RestartPolicy `yaml:"restart,omitempty"`
+	Network       string        `yaml:",omitempty"`
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
