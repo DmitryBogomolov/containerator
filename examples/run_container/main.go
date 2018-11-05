@@ -1,46 +1,14 @@
+// Program run_container shows usage of *containerator.RunContainer* function.
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/client"
 )
-
-type mapping struct {
-	list []containerator.Mapping
-}
-
-func (m *mapping) String() string {
-	return fmt.Sprintf("%v", m.list)
-}
-
-func (m *mapping) Set(value string) error {
-	parts := strings.SplitN(value, ":", 2)
-	if len(parts) < 2 {
-		return errors.New("not a pair")
-	}
-	m.list = append(m.list, containerator.Mapping{Source: parts[0], Target: parts[1]})
-	return nil
-}
-
-type envMapping struct {
-	mapping
-}
-
-func (m *envMapping) Set(value string) error {
-	parts := strings.SplitN(value, "=", 2)
-	obj := containerator.Mapping{Source: parts[0]}
-	if len(parts) > 1 {
-		obj.Target = parts[1]
-	}
-	m.list = append(m.list, obj)
-	return nil
-}
 
 func run() error {
 	var imageName string
@@ -61,6 +29,11 @@ func run() error {
 	flag.StringVar(&network, "network", "", "network")
 
 	flag.Parse()
+
+	if imageName == "" || containerName == "" {
+		flag.Usage()
+		return nil
+	}
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
