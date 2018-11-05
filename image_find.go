@@ -7,7 +7,13 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// GetImageFullName returns full image name.
+/*
+GetImageFullName returns full image name.
+
+Takes first of repository-tag pairs.
+
+	GetImageFullName(&image) -> "my-image:1"
+*/
 func GetImageFullName(image *types.ImageSummary) string {
 	if len(image.RepoTags) > 0 {
 		return image.RepoTags[0]
@@ -19,7 +25,13 @@ func extractRepo(repoTag string) string {
 	return strings.SplitN(repoTag, ":", 2)[0]
 }
 
-// GetImageName returns friendly image name.
+/*
+GetImageName returns friendly image name.
+
+Takes only repository part of image name.
+
+	GetImageName(&image) -> "my-image"
+*/
 func GetImageName(image *types.ImageSummary) string {
 	return extractRepo(GetImageFullName(image))
 }
@@ -29,12 +41,24 @@ const (
 	shortIDLength = 12
 )
 
-// GetImageShortID returns short image id.
+/*
+GetImageShortID returns short image id.
+
+Removes "sha256:" prefix and takes first 12 characters of identifier,
+
+	GetImageShortID(&image) -> "12345678abcd"
+*/
 func GetImageShortID(image *types.ImageSummary) string {
 	return image.ID[len(imageIDPrefix) : len(imageIDPrefix)+shortIDLength]
 }
 
-// FindImageByID searches image by id.
+/*
+FindImageByID searches image by id.
+
+`id` is a full (64 characters) identifier with "sha256:" prefix.
+
+	FindImageByID(cli, "sha256:<guid>") -> &image
+*/
 func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
@@ -48,7 +72,14 @@ func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, e
 	return nil, nil
 }
 
-// FindImageByShortID searches image by short id.
+/*
+FindImageByShortID searches image by short id.
+
+Adds "sha256:" prefix and uses `string.HasPrefix` to compare identifiers.
+Any substring of actual identifier can be passed.
+
+	FindImageByShortID(cli, "1234") -> &image
+*/
 func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSummary, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
@@ -63,7 +94,14 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSumma
 	return nil, nil
 }
 
-// FindImageByRepoTag searches image by repo tag.
+/*
+FindImageByRepoTag searches image by repo tag.
+
+`repoTag` contains repository and tag separated by ":".
+If `repoTag` does not contain ":" then ":latest" postfix is added.
+
+	FindImageByRepoTag(cli, "my-image:1") -> &image
+*/
 func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.ImageSummary, error) {
 	images, err := cliImageList(cli)
 	if err != nil {
@@ -83,7 +121,13 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 	return nil, nil
 }
 
-// FindImagesByRepo searches images by repo.
+/*
+FindImagesByRepo searches images by repo.
+
+Finds all images with matching repository.
+
+	FindImagesByRepo(cli, "my-image") -> []&image
+*/
 func FindImagesByRepo(cli client.ImageAPIClient, repo string) ([]*types.ImageSummary, error) {
 	images, err := cliImageList(cli)
 	if err != nil {

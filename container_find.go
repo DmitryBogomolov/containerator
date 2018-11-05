@@ -7,7 +7,13 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// GetContainerName returns friendly image name.
+/*
+GetContainerName returns container name.
+
+Takes first of container names and trims leading  "/" character.
+
+	GetContainerName(&container) -> "my-container"
+*/
 func GetContainerName(container *types.Container) string {
 	if len(container.Names) > 0 {
 		return container.Names[0][1:]
@@ -15,12 +21,25 @@ func GetContainerName(container *types.Container) string {
 	return ""
 }
 
-// GetContainerShortID return short container id.
+/*
+GetContainerShortID return short variant of container id.
+
+Takes first 12 characters of identifier.
+Produces same value as the first columns of `docker ps` output.
+
+	GetContainerShortID(&container) -> "12345678abcd"
+*/
 func GetContainerShortID(container *types.Container) string {
 	return container.ID[:shortIDLength]
 }
 
-// FindContainerByID searches container by id.
+/*
+FindContainerByID searches container by id.
+
+`id` is a full (64 characters) identifier.
+
+	FindContainerByID(cli, "<guid>") -> &container
+*/
 func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
@@ -34,7 +53,14 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 	return nil, nil
 }
 
-// FindContainerByShortID searches container by short id.
+/*
+FindContainerByShortID searches container by short id.
+
+Uses `strings.HasPrefix` to compare container identifiers.
+Any substring of actual identifier can be passed.
+
+	FindContainerByShortID(cli, "1234") -> &container
+*/
 func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
@@ -48,7 +74,13 @@ func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Co
 	return nil, nil
 }
 
-// FindContainerByName searches container by name.
+/*
+FindContainerByName searches container by name.
+
+Adds leading "/" character to passed value.
+
+	FindContainerByName(cli, "my-container") -> &container
+*/
 func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
@@ -65,7 +97,13 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 	return nil, nil
 }
 
-// FindContainersByImageID searches containers by image id.
+/*
+FindContainersByImageID searches containers by image id.
+
+`imageID` is a full image identifier - 64 characters with leading "sha256:".
+
+	FindContainersByImageID(cli, "sha256:<guid>") -> &container
+*/
 func FindContainersByImageID(cli client.ContainerAPIClient, imageID string) ([]*types.Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
