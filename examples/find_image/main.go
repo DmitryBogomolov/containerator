@@ -1,3 +1,4 @@
+// Program find_image shows usage of *containerator* functions that find docker images.
 package main
 
 import (
@@ -27,34 +28,34 @@ func run() error {
 	if id != "" {
 		image, err := containerator.FindImageByID(cli, id)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
 			fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
 		}
-	}
-	if repoTag != "" {
+	} else if repoTag != "" {
 		image, err := containerator.FindImageByRepoTag(cli, repoTag)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
 			fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
 		}
-	}
-	if repo != "" {
+	} else if repo != "" {
 		images, err := containerator.FindImagesByRepo(cli, repo)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		fmt.Println("Images:")
 		for _, image := range images {
 			fmt.Printf("  %s\n", containerator.GetImageFullName(image))
 		}
+	} else {
+		flag.Usage()
 	}
 	return nil
 }

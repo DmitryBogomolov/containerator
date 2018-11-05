@@ -1,3 +1,4 @@
+// Program find_container shows usage of *containerator* functions that find docker containers.
 package main
 
 import (
@@ -27,34 +28,34 @@ func run() error {
 	if id != "" {
 		container, err := containerator.FindContainerByID(cli, id)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
 			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
 		}
-	}
-	if name != "" {
+	} else if name != "" {
 		container, err := containerator.FindContainerByName(cli, name)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
 			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
 		}
-	}
-	if imageID != "" {
+	} else if imageID != "" {
 		containers, err := containerator.FindContainersByImageID(cli, imageID)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		fmt.Println("Containers:")
 		for _, container := range containers {
 			fmt.Printf("  %s\n", containerator.GetContainerName(container))
 		}
+	} else {
+		flag.Usage()
 	}
 	return nil
 }
