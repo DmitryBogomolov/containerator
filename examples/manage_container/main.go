@@ -17,6 +17,15 @@ import (
 	"github.com/docker/docker/client"
 )
 
+func selectMode(mode string, config *config) string {
+	for i, item := range config.Modes {
+		if item == mode {
+			return mode
+		}
+	}
+	return ""
+}
+
 func getWorkDir(option string) string {
 	if _, err := os.Stat(option); os.IsNotExist(err) {
 		cwd, err := os.Getwd()
@@ -26,13 +35,6 @@ func getWorkDir(option string) string {
 		return cwd
 	}
 	return option
-}
-
-func selectMode(mode string) string {
-	if mode == "" {
-		return "dev"
-	}
-	return strings.ToLower(mode)
 }
 
 func selectImage(imageName string, imageRepo string, workDir string, cli client.ImageAPIClient) (*types.ImageSummary, error) {
@@ -144,16 +146,8 @@ const (
 func run() error {
 	var configPath string
 	flag.StringVar(&configPath, "config", defaultConfigName, "configuration file")
-	var workDir string
-	flag.StringVar(&workDir, "dir", "", "project directory")
 	var mode string
 	flag.StringVar(&mode, "mode", defaultMode, "mode")
-	var imageName string
-	flag.StringVar(&imageName, "image", "", "image name")
-	var imageRepo string
-	flag.StringVar(&imageRepo, "image-repo", "", "image repo")
-	var containerName string
-	flag.StringVar(&containerName, "container", "", "container name")
 	var force bool
 	flag.BoolVar(&force, "force", false, "force container creation")
 
@@ -161,26 +155,15 @@ func run() error {
 
 	config, err := readConfig(configPath)
 	if err != nil {
-		log.Printf("Config is not loaded: %+v\n", err)
+		return err
 	}
 
-	if imageName != "" {
-		config.ImageName = imageName
-	}
-	if imageRepo != "" {
-		config.ImageRepo = imageRepo
-	}
-	if containerName != "" {
-		config.ContainerName = containerName
-	}
-
-	mode = strings.ToLower(mode)
-	config = buildModeConfig(config, mode)
-	if config == nil {
+	mode = selectMode(mode, config)
+	if mode == "" {
 		return fmt.Errorf("'%s' mode is not valid", mode)
 	}
 
-	workDir = getWorkDir(workDir)
+	workDir := getWorkDir(configPath)
 	log.Printf("Directory: %s\n", workDir)
 
 	cli, err := client.NewEnvClient()

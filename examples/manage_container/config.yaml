@@ -1,23 +1,14 @@
-image: test:10
 image_repo: test
-container: tester # or dirname
+container_name: tester
 network: test
+base_port: 50000
+part_offset: 10
 ports:
-  1000: 2000
+  - 2000
 volumes:
   /data: /tmp
 env:
   A: 1
-env_file: test.env
 modes:
-  - name: dev
-    container: tester-x
-    port_offset: 1
-    ports:
-      1010: 2010
-    volumes:
-      /data: /tmp-dev
-    env:
-      A: 2
-      B: '3'
-    env_file: test-dev.env
+  - dev
+  - prod
