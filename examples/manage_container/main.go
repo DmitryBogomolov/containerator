@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
@@ -18,7 +19,7 @@ import (
 )
 
 func selectMode(mode string, config *config) string {
-	for i, item := range config.Modes {
+	for _, item := range config.Modes {
 		if item == mode {
 			return mode
 		}
@@ -26,37 +27,49 @@ func selectMode(mode string, config *config) string {
 	return ""
 }
 
-func getWorkDir(option string) string {
-	if _, err := os.Stat(option); os.IsNotExist(err) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		return cwd
-	}
-	return option
-}
-
-func selectImage(imageName string, imageRepo string, workDir string, cli client.ImageAPIClient) (*types.ImageSummary, error) {
-	if imageName != "" {
-		image, err := containerator.FindImageByRepoTag(cli, imageName)
-		if image == nil && err == nil {
-			err = fmt.Errorf("image %s does not exist", imageName)
-		}
-		return image, err
-
-	}
-	if imageRepo == "" {
-		imageRepo = filepath.Base(workDir)
-	}
-	images, err := containerator.FindImagesByRepo(cli, imageRepo)
-	if len(images) == 0 && err == nil {
-		err = fmt.Errorf("images %s do not exist", imageRepo)
-	}
+func findImage(cli client.ImageAPIClient, config *config) (*types.ImageSummary, error) {
+	list, err := containerator.FindImagesByRepo(cli, config.ImageRepo)
 	if err != nil {
 		return nil, err
 	}
-	return images[0], nil
+	if len(list) == 0 {
+		return nil, fmt.Errorf("no %s images", config.ImageRepo)
+	}
+	return list[0], nil
+}
+
+func buildContainerOptions(config *config, imageName string, mode string) *containerator.RunContainerOptions {
+	containerName := config.ImageRepo
+	if mode != "" {
+		containerName += "-" + mode
+	}
+	ret := containerator.RunContainerOptions{
+		Image:         imageName,
+		Name:          containerName,
+		RestartPolicy: containerator.RestartAlways,
+		Network:       config.Network,
+		Volumes:       containerator.NewMappingListFromMap(config.Volumes),
+		Env:           containerator.NewMappingListFromMap(config.Env),
+	}
+	modeOffset := 0
+	for i, val := range config.Modes {
+		if val == mode {
+			modeOffset = i
+			break
+		}
+	}
+	basePort := int(config.BasePort) + int(config.PortOffset)*modeOffset
+	if len(config.Ports) > 0 {
+		ports := make([]containerator.Mapping, 0, len(config.Ports))
+		for i, port := range config.Ports {
+			ports = append(ports, containerator.Mapping{
+				Source: strconv.Itoa(basePort + i),
+				Target: strconv.Itoa(int(port)),
+			})
+		}
+		ret.Ports = ports
+	}
+	return &ret
 }
 
 func isFileExist(file string) bool {
@@ -66,24 +79,25 @@ func isFileExist(file string) bool {
 	return false
 }
 
-func getEnvFileName(workDir string, mode string) string {
-	return path.Join(workDir, fmt.Sprintf("%s.list", mode))
+func getEnvFileName(dir string, mode string) string {
+	return path.Join(dir, fmt.Sprintf("%s.list", mode))
 }
 
-func selectEnvFile(workDir string, mode string) string {
-	name := getEnvFileName(workDir, mode)
+func selectEnvFile(dir string, mode string) string {
+	name := getEnvFileName(dir, mode)
 	if isFileExist(name) {
 		return name
 	}
-	name = getEnvFileName(workDir, "env")
+	name = getEnvFileName(dir, "env")
 	if isFileExist(name) {
 		return name
 	}
 	return ""
 }
 
-func getEnvFileReader(workDir string, mode string) io.Reader {
-	envFileName := selectEnvFile(workDir, mode)
+func getEnvFileReader(configPath string, mode string) io.Reader {
+	dir, _ := filepath.Abs(filepath.Dir(configPath))
+	envFileName := selectEnvFile(dir, mode)
 	if envFileName == "" {
 		log.Println("env file is not found")
 		return nil
@@ -108,17 +122,21 @@ func suspendCurrentContainer(container *types.Container, cli client.ContainerAPI
 }
 
 func resumeCurrentContainer(container *types.Container, name string, cli client.ContainerAPIClient) error {
-	if err := cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerRename(context.Background(), container.ID, name); err != nil {
 		return err
 	}
-	if err := cli.ContainerRename(context.Background(), container.ID, name); err != nil {
+	if err := cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func updateContainer(options *containerator.RunContainerOptions, current *types.Container,
-	cli client.ContainerAPIClient) (*types.Container, error) {
+func removeCurrentContainer(container *types.Container, cli client.ContainerAPIClient) error {
+	return cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{})
+}
+
+func updateContainer(options *containerator.RunContainerOptions,
+	current *types.Container, cli client.ContainerAPIClient) (*types.Container, error) {
 	if current != nil {
 		if err := suspendCurrentContainer(current, cli); err != nil {
 			return nil, err
@@ -140,71 +158,78 @@ func updateContainer(options *containerator.RunContainerOptions, current *types.
 
 const (
 	defaultConfigName = "config.yaml"
-	defaultMode       = "dev"
 )
 
 func run() error {
-	var configPath string
-	flag.StringVar(&configPath, "config", defaultConfigName, "configuration file")
-	var mode string
-	flag.StringVar(&mode, "mode", defaultMode, "mode")
-	var force bool
-	flag.BoolVar(&force, "force", false, "force container creation")
+	var configPathOption string
+	flag.StringVar(&configPathOption, "config", defaultConfigName, "configuration file")
+	var modeOption string
+	flag.StringVar(&modeOption, "mode", "", "mode")
+	var forceOption bool
+	flag.BoolVar(&forceOption, "force", false, "force container creation")
 
 	flag.Parse()
 
-	config, err := readConfig(configPath)
+	workDir, _ := filepath.Abs(filepath.Dir(configPathOption))
+	log.Printf("Directory: %s\n", workDir)
+
+	config, err := readConfig(configPathOption)
 	if err != nil {
 		return err
 	}
 
-	mode = selectMode(mode, config)
+	mode := selectMode(modeOption, config)
 	if mode == "" {
-		return fmt.Errorf("'%s' mode is not valid", mode)
+		return fmt.Errorf("'%s' mode is not valid", modeOption)
 	}
-
-	workDir := getWorkDir(configPath)
-	log.Printf("Directory: %s\n", workDir)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}
 
-	image, err := selectImage(config.ImageName, config.ImageRepo, workDir, cli)
+	image, err := findImage(cli, config)
 	if err != nil {
 		return err
 	}
+	imageName := containerator.GetImageFullName(image)
+	log.Printf("Image: %s\n", imageName)
 
-	containerName = config.ContainerName
-	if containerName == "" {
-		containerName = fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
-	}
-
-	options := &containerator.RunContainerOptions{
-		Image: containerator.GetImageFullName(image),
-		Name:  containerName,
-	}
-	if reader := getEnvFileReader(workDir, mode); reader != nil {
+	options := buildContainerOptions(config, imageName, mode)
+	if reader := getEnvFileReader(configPathOption, mode); reader != nil {
 		options.EnvReader = reader
 	}
 
-	log.Printf("Image: %s\n", containerator.GetImageFullName(image))
-	log.Printf("Container: %s\n", containerName)
+	log.Printf("Container: %s\n", options.Name)
 
-	currentContainer, err := containerator.FindContainerByName(cli, containerName)
+	currentContainer, err := containerator.FindContainerByName(cli, options.Name)
 	if err != nil {
 		return err
 	}
-	if currentContainer != nil && currentContainer.ImageID == image.ID && !force {
+	if currentContainer != nil && currentContainer.ImageID == image.ID && !forceOption {
 		log.Println("Container is already running")
 		return nil
 	}
 
-	nextContainer, err := updateContainer(options, currentContainer, cli)
+	if currentContainer != nil {
+		err = suspendCurrentContainer(currentContainer, cli)
+		if err != nil {
+			return err
+		}
+	}
+
+	nextContainer, err := containerator.RunContainer(cli, options)
 	if err != nil {
+		if currentContainer != nil {
+			resumeCurrentContainer(currentContainer, options.Name, cli)
+		}
 		return err
 	}
+
+	if currentContainer != nil {
+		removeCurrentContainer(currentContainer, cli)
+	}
+
 	log.Printf("Container: %s %s\n", containerator.GetContainerName(nextContainer),
 		containerator.GetContainerShortID(nextContainer))
 

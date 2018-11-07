@@ -12,7 +12,7 @@ type config struct {
 	Network       string `yaml:"network"`
 
 	BasePort   float64 `yaml:"base_port"`
-	PortOffset float64 `yaml:"port_offset'`
+	PortOffset float64 `yaml:"port_offset"`
 
 	Ports   []float64         `yaml:"ports"`
 	Volumes map[string]string `yaml:"volumes"`
@@ -28,13 +28,5 @@ func readConfig(pathToFile string) (*config, error) {
 	}
 	var data config
 	err = yaml.Unmarshal(bytes, &data)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(data.Modes) == 0 {
-		data.Modes = []string{defaultMode}
-	}
-
-	return &data, nil
+	return &data, err
 }
