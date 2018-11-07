@@ -64,6 +64,15 @@ func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// NewMappingListFromMap is a helper util that creates list of Mapping instances from dictionary.
+func NewMappingListFromMap(data map[string]string) []Mapping {
+	ret := make([]Mapping, 0, len(data))
+	for source, target := range data {
+		ret = append(ret, Mapping{Source: source, Target: target})
+	}
+	return ret
+}
+
 // RestartPolicy type defines container restart policy.
 type RestartPolicy string
 
