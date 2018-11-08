@@ -374,3 +374,14 @@ func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
 	assertEqual(t, options.Env[0], Mapping{"A", "1"}, "options-Env-1")
 	assertEqual(t, options.Env[1], Mapping{"B", "2"}, "options-Env-2")
 }
+
+func TestNewMappingListFromMap(t *testing.T) {
+	ret := NewMappingListFromMap(map[string]string{
+		"a": "1",
+		"b": "2",
+		"c": "3",
+		"d": "4",
+	})
+
+	assertEqual(t, len(ret), 4, "length")
+}

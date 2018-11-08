@@ -4,214 +4,153 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
+	"strconv"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-func getWorkDir(option string) string {
-	if _, err := os.Stat(option); os.IsNotExist(err) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		return cwd
+func buildContainerOptions(config *config, imageName string, containerName string, modeIndex int) *containerator.RunContainerOptions {
+	ret := containerator.RunContainerOptions{
+		Image:         imageName,
+		Name:          containerName,
+		RestartPolicy: containerator.RestartAlways,
+		Network:       config.Network,
+		Volumes:       config.Volumes,
+		Env:           config.Env,
 	}
-	return option
-}
-
-func selectMode(mode string) string {
-	if mode == "" {
-		return "dev"
-	}
-	return strings.ToLower(mode)
-}
-
-func selectImage(imageName string, imageRepo string, workDir string, cli client.ImageAPIClient) (*types.ImageSummary, error) {
-	if imageName != "" {
-		image, err := containerator.FindImageByRepoTag(cli, imageName)
-		if image == nil && err == nil {
-			err = fmt.Errorf("image %s does not exist", imageName)
-		}
-		return image, err
-
-	}
-	if imageRepo == "" {
-		imageRepo = filepath.Base(workDir)
-	}
-	images, err := containerator.FindImagesByRepo(cli, imageRepo)
-	if len(images) == 0 && err == nil {
-		err = fmt.Errorf("images %s do not exist", imageRepo)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return images[0], nil
-}
-
-func isFileExist(file string) bool {
-	if _, err := os.Stat(file); os.IsExist(err) {
-		return true
-	}
-	return false
-}
-
-func getEnvFileName(workDir string, mode string) string {
-	return path.Join(workDir, fmt.Sprintf("%s.list", mode))
-}
-
-func selectEnvFile(workDir string, mode string) string {
-	name := getEnvFileName(workDir, mode)
-	if isFileExist(name) {
-		return name
-	}
-	name = getEnvFileName(workDir, "env")
-	if isFileExist(name) {
-		return name
-	}
-	return ""
-}
-
-func getEnvFileReader(workDir string, mode string) io.Reader {
-	envFileName := selectEnvFile(workDir, mode)
-	if envFileName == "" {
-		log.Println("env file is not found")
-		return nil
-	}
-	data, err := ioutil.ReadFile(envFileName)
-	if err != nil {
-		log.Printf("failed to read env file: %+v", err)
-		return nil
-	}
-	return strings.NewReader(string(data))
-}
-
-func suspendCurrentContainer(container *types.Container, cli client.ContainerAPIClient) error {
-	tmpName := containerator.GetContainerName(container) + ".current"
-	if err := cli.ContainerRename(context.Background(), container.ID, tmpName); err != nil {
-		return err
-	}
-	if err := cli.ContainerStop(context.Background(), container.ID, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
-func resumeCurrentContainer(container *types.Container, name string, cli client.ContainerAPIClient) error {
-	if err := cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
-		return err
-	}
-	if err := cli.ContainerRename(context.Background(), container.ID, name); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateContainer(options *containerator.RunContainerOptions, current *types.Container,
-	cli client.ContainerAPIClient) (*types.Container, error) {
-	if current != nil {
-		if err := suspendCurrentContainer(current, cli); err != nil {
-			return nil, err
-		}
-	}
-
-	nextContainer, err := containerator.RunContainer(cli, options)
-	if err != nil {
-		if current != nil {
-			if err := resumeCurrentContainer(current, containerator.GetContainerName(current), cli); err != nil {
-				return nil, err
+	basePort := int(config.BasePort) + int(config.PortOffset)*modeIndex
+	if len(config.Ports) > 0 {
+		ports := make([]containerator.Mapping, len(config.Ports))
+		for i, port := range config.Ports {
+			ports[i] = containerator.Mapping{
+				Source: strconv.Itoa(basePort + i),
+				Target: strconv.Itoa(int(port)),
 			}
 		}
-		return nil, err
+		ret.Ports = ports
 	}
-
-	return nextContainer, nil
+	return &ret
 }
 
+func suspendCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
+	tmpName := name + ".current"
+	if err := cli.ContainerRename(context.Background(), currentContainerID, tmpName); err != nil {
+		return err
+	}
+	if err := cli.ContainerStop(context.Background(), currentContainerID, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func resumeCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
+	if err := cli.ContainerRename(context.Background(), currentContainerID, name); err != nil {
+		return err
+	}
+	if err := cli.ContainerStart(context.Background(), currentContainerID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func removeCurrentContainer(currentContainerID string, cli client.ContainerAPIClient) error {
+	return cli.ContainerRemove(context.Background(), currentContainerID, types.ContainerRemoveOptions{})
+}
+
+func updateContainer(options *containerator.RunContainerOptions, currentContainer *types.Container,
+	cli client.ContainerAPIClient) (container *types.Container, err error) {
+	if currentContainer != nil {
+		currentContainerID := currentContainer.ID
+		if err = suspendCurrentContainer(currentContainerID, options.Name, cli); err != nil {
+			return
+		}
+		defer func() {
+			if err != nil {
+				otherErr := resumeCurrentContainer(currentContainerID, options.Name, cli)
+				if otherErr != nil {
+					err = fmt.Errorf("%v (%v)", err, otherErr)
+				}
+			} else {
+				err = removeCurrentContainer(currentContainerID, cli)
+			}
+		}()
+	}
+	container, err = containerator.RunContainer(cli, options)
+	return
+}
+
+const (
+	defaultConfigName = "config.yaml"
+)
+
+// TODO
+// --tag
+// --remove
 func run() error {
-	var workDir string
-	flag.StringVar(&workDir, "dir", "", "project directory")
-	var mode string
-	flag.StringVar(&mode, "mode", "", "mode")
-	var imageName string
-	flag.StringVar(&imageName, "image", "", "image name")
-	var imageRepo string
-	flag.StringVar(&imageRepo, "image-repo", "", "image repo")
-	var containerName string
-	flag.StringVar(&containerName, "container", "", "container name")
-	var force bool
-	flag.BoolVar(&force, "force", false, "force container creation")
+	var configPathOption string
+	flag.StringVar(&configPathOption, "config", defaultConfigName, "configuration file")
+	var modeOption string
+	flag.StringVar(&modeOption, "mode", "", "mode")
+	var forceOption bool
+	flag.BoolVar(&forceOption, "force", false, "force container creation")
 
 	flag.Parse()
 
-	workDir = getWorkDir(workDir)
-	log.Printf("Directory: %s\n", workDir)
+	config, err := readConfig(configPathOption)
+	if err != nil {
+		return err
+	}
 
-	mode = selectMode(mode)
-	log.Printf("Mode: %s\n", mode)
+	mode, modeIndex, err := selectMode(modeOption, config)
+	if err != nil {
+		return err
+	}
+
+	containerName := getContainerName(config.ImageRepo, mode)
+	log.Printf("Container: %s\n", containerName)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}
 
-	image, err := selectImage(imageName, imageRepo, workDir, cli)
-	if err != nil {
-		return err
-	}
-
-	if containerName == "" {
-		containerName = fmt.Sprintf("%s-%s", containerator.GetImageName(image), mode)
-	}
-
-	options := &containerator.RunContainerOptions{
-		Image: containerator.GetImageFullName(image),
-		Name:  containerName,
-	}
-	if reader := getEnvFileReader(workDir, mode); reader != nil {
-		options.EnvReader = reader
-	}
-
-	log.Printf("Image: %s\n", containerator.GetImageFullName(image))
-	log.Printf("Container: %s\n", containerName)
-
 	currentContainer, err := containerator.FindContainerByName(cli, containerName)
 	if err != nil {
 		return err
 	}
-	if currentContainer != nil && currentContainer.ImageID == image.ID && !force {
+
+	image, err := findImage(cli, config)
+	if err != nil {
+		return err
+	}
+	imageName := containerator.GetImageFullName(image)
+	log.Printf("Image: %s\n", imageName)
+
+	if currentContainer != nil && currentContainer.ImageID == image.ID && !forceOption {
 		log.Println("Container is already running")
 		return nil
 	}
 
-	nextContainer, err := updateContainer(options, currentContainer, cli)
+	options := buildContainerOptions(config, imageName, containerName, modeIndex)
+	if reader := getEnvFileReader(configPathOption, mode); reader != nil {
+		options.EnvReader = reader
+	}
+
+	container, err := updateContainer(options, currentContainer, cli)
 	if err != nil {
 		return err
 	}
-	log.Printf("Container: %s %s\n", containerator.GetContainerName(nextContainer),
-		containerator.GetContainerShortID(nextContainer))
+
+	log.Printf("Container: %s %s\n",
+		containerator.GetContainerName(container), containerator.GetContainerShortID(container))
 
 	return nil
 }
 
-// TODO: config - ports, volumes, environment; remove env-file.
-// image: test:10
-// image-repo: test
-// container: tester
-// ports:
-//   - 1000: 2000
-// volumes:
-//   - /data: /tmp
-// environment:
-//   - A: 1
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("%+v\n", err)
