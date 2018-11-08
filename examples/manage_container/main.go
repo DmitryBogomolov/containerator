@@ -18,13 +18,32 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func selectMode(mode string, config *config) string {
-	for _, item := range config.Modes {
-		if item == mode {
-			return mode
+func findIndex(item string, list []string) int {
+	for i, obj := range list {
+		if obj == item {
+			return i
 		}
 	}
-	return ""
+	return -1
+}
+
+func selectMode(modeOption string, config *config) (string, int, error) {
+	index := findIndex(modeOption, config.Modes)
+	if index >= 0 {
+		return modeOption, index, nil
+	}
+	if modeOption == "" && len(config.Modes) == 0 {
+		return modeOption, 0, nil
+	}
+	return "", 0, fmt.Errorf("mode '%s' is not valid", modeOption)
+}
+
+func getContainerName(imageRepo string, mode string) string {
+	name := imageRepo
+	if mode != "" {
+		name += "-" + mode
+	}
+	return name
 }
 
 func findImage(cli client.ImageAPIClient, config *config) (*types.ImageSummary, error) {
@@ -33,39 +52,28 @@ func findImage(cli client.ImageAPIClient, config *config) (*types.ImageSummary, 
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("no %s images", config.ImageRepo)
+		return nil, fmt.Errorf("no '%s' images", config.ImageRepo)
 	}
 	return list[0], nil
 }
 
-func buildContainerOptions(config *config, imageName string, mode string) *containerator.RunContainerOptions {
-	containerName := config.ImageRepo
-	if mode != "" {
-		containerName += "-" + mode
-	}
+func buildContainerOptions(config *config, imageName string, containerName string, modeIndex int) *containerator.RunContainerOptions {
 	ret := containerator.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,
 		RestartPolicy: containerator.RestartAlways,
 		Network:       config.Network,
-		Volumes:       containerator.NewMappingListFromMap(config.Volumes),
-		Env:           containerator.NewMappingListFromMap(config.Env),
+		Volumes:       config.Volumes,
+		Env:           config.Env,
 	}
-	modeOffset := 0
-	for i, val := range config.Modes {
-		if val == mode {
-			modeOffset = i
-			break
-		}
-	}
-	basePort := int(config.BasePort) + int(config.PortOffset)*modeOffset
+	basePort := int(config.BasePort) + int(config.PortOffset)*modeIndex
 	if len(config.Ports) > 0 {
-		ports := make([]containerator.Mapping, 0, len(config.Ports))
+		ports := make([]containerator.Mapping, len(config.Ports))
 		for i, port := range config.Ports {
-			ports = append(ports, containerator.Mapping{
+			ports[i] = containerator.Mapping{
 				Source: strconv.Itoa(basePort + i),
 				Target: strconv.Itoa(int(port)),
-			})
+			}
 		}
 		ret.Ports = ports
 	}
@@ -178,12 +186,20 @@ func run() error {
 		return err
 	}
 
-	mode := selectMode(modeOption, config)
-	if mode == "" {
-		return fmt.Errorf("'%s' mode is not valid", modeOption)
+	mode, modeIndex, err := selectMode(modeOption, config)
+	if err != nil {
+		return err
 	}
 
+	containerName := getContainerName(config.ImageRepo, mode)
+	log.Printf("Container: %s\n", containerName)
+
 	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+
+	currentContainer, err := containerator.FindContainerByName(cli, containerName)
 	if err != nil {
 		return err
 	}
@@ -195,20 +211,14 @@ func run() error {
 	imageName := containerator.GetImageFullName(image)
 	log.Printf("Image: %s\n", imageName)
 
-	options := buildContainerOptions(config, imageName, mode)
-	if reader := getEnvFileReader(configPathOption, mode); reader != nil {
-		options.EnvReader = reader
-	}
-
-	log.Printf("Container: %s\n", options.Name)
-
-	currentContainer, err := containerator.FindContainerByName(cli, options.Name)
-	if err != nil {
-		return err
-	}
 	if currentContainer != nil && currentContainer.ImageID == image.ID && !forceOption {
 		log.Println("Container is already running")
 		return nil
+	}
+
+	options := buildContainerOptions(config, imageName, containerName, modeIndex)
+	if reader := getEnvFileReader(configPathOption, mode); reader != nil {
+		options.EnvReader = reader
 	}
 
 	if currentContainer != nil {
@@ -221,7 +231,7 @@ func run() error {
 	nextContainer, err := containerator.RunContainer(cli, options)
 	if err != nil {
 		if currentContainer != nil {
-			resumeCurrentContainer(currentContainer, options.Name, cli)
+			resumeCurrentContainer(currentContainer, containerName, cli)
 		}
 		return err
 	}
