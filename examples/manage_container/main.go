@@ -118,50 +118,51 @@ func getEnvFileReader(configPath string, mode string) io.Reader {
 	return strings.NewReader(string(data))
 }
 
-func suspendCurrentContainer(container *types.Container, cli client.ContainerAPIClient) error {
-	tmpName := containerator.GetContainerName(container) + ".current"
-	if err := cli.ContainerRename(context.Background(), container.ID, tmpName); err != nil {
+func suspendCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
+	tmpName := name + ".current"
+	if err := cli.ContainerRename(context.Background(), currentContainerID, tmpName); err != nil {
 		return err
 	}
-	if err := cli.ContainerStop(context.Background(), container.ID, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
-func resumeCurrentContainer(container *types.Container, name string, cli client.ContainerAPIClient) error {
-	if err := cli.ContainerRename(context.Background(), container.ID, name); err != nil {
-		return err
-	}
-	if err := cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStop(context.Background(), currentContainerID, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
-func removeCurrentContainer(container *types.Container, cli client.ContainerAPIClient) error {
-	return cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{})
+func resumeCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
+	if err := cli.ContainerRename(context.Background(), currentContainerID, name); err != nil {
+		return err
+	}
+	if err := cli.ContainerStart(context.Background(), currentContainerID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+	return nil
 }
 
-func updateContainer(options *containerator.RunContainerOptions,
-	current *types.Container, cli client.ContainerAPIClient) (*types.Container, error) {
-	if current != nil {
-		if err := suspendCurrentContainer(current, cli); err != nil {
-			return nil, err
+func removeCurrentContainer(currentContainerID string, cli client.ContainerAPIClient) error {
+	return cli.ContainerRemove(context.Background(), currentContainerID, types.ContainerRemoveOptions{})
+}
+
+func updateContainer(options *containerator.RunContainerOptions, currentContainer *types.Container,
+	cli client.ContainerAPIClient) (container *types.Container, err error) {
+	if currentContainer != nil {
+		currentContainerID := currentContainer.ID
+		if err = suspendCurrentContainer(currentContainerID, options.Name, cli); err != nil {
+			return
 		}
-	}
-
-	nextContainer, err := containerator.RunContainer(cli, options)
-	if err != nil {
-		if current != nil {
-			if err := resumeCurrentContainer(current, containerator.GetContainerName(current), cli); err != nil {
-				return nil, err
+		defer func() {
+			if err != nil {
+				otherErr := resumeCurrentContainer(currentContainerID, options.Name, cli)
+				if otherErr != nil {
+					err = fmt.Errorf("%v (%v)", err, otherErr)
+				}
+			} else {
+				err = removeCurrentContainer(currentContainerID, cli)
 			}
-		}
-		return nil, err
+		}()
 	}
-
-	return nextContainer, nil
+	container, err = containerator.RunContainer(cli, options)
+	return
 }
 
 const (
@@ -177,9 +178,6 @@ func run() error {
 	flag.BoolVar(&forceOption, "force", false, "force container creation")
 
 	flag.Parse()
-
-	workDir, _ := filepath.Abs(filepath.Dir(configPathOption))
-	log.Printf("Directory: %s\n", workDir)
 
 	config, err := readConfig(configPathOption)
 	if err != nil {
@@ -221,27 +219,13 @@ func run() error {
 		options.EnvReader = reader
 	}
 
-	if currentContainer != nil {
-		err = suspendCurrentContainer(currentContainer, cli)
-		if err != nil {
-			return err
-		}
-	}
-
-	nextContainer, err := containerator.RunContainer(cli, options)
+	container, err := updateContainer(options, currentContainer, cli)
 	if err != nil {
-		if currentContainer != nil {
-			resumeCurrentContainer(currentContainer, containerName, cli)
-		}
 		return err
 	}
 
-	if currentContainer != nil {
-		removeCurrentContainer(currentContainer, cli)
-	}
-
-	log.Printf("Container: %s %s\n", containerator.GetContainerName(nextContainer),
-		containerator.GetContainerShortID(nextContainer))
+	log.Printf("Container: %s %s\n",
+		containerator.GetContainerName(container), containerator.GetContainerShortID(container))
 
 	return nil
 }
