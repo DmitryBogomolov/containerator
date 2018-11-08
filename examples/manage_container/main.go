@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -36,46 +35,21 @@ func buildContainerOptions(config *config, imageName string, containerName strin
 	return &ret
 }
 
-func suspendCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
-	tmpName := name + ".current"
-	if err := cli.ContainerRename(context.Background(), currentContainerID, tmpName); err != nil {
-		return err
-	}
-	if err := cli.ContainerStop(context.Background(), currentContainerID, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
-func resumeCurrentContainer(currentContainerID string, name string, cli client.ContainerAPIClient) error {
-	if err := cli.ContainerRename(context.Background(), currentContainerID, name); err != nil {
-		return err
-	}
-	if err := cli.ContainerStart(context.Background(), currentContainerID, types.ContainerStartOptions{}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func removeCurrentContainer(currentContainerID string, cli client.ContainerAPIClient) error {
-	return cli.ContainerRemove(context.Background(), currentContainerID, types.ContainerRemoveOptions{})
-}
-
 func updateContainer(options *containerator.RunContainerOptions, currentContainer *types.Container,
 	cli client.ContainerAPIClient) (container *types.Container, err error) {
 	if currentContainer != nil {
 		currentContainerID := currentContainer.ID
-		if err = suspendCurrentContainer(currentContainerID, options.Name, cli); err != nil {
+		if err = containerator.SuspendContainer(cli, currentContainerID); err != nil {
 			return
 		}
 		defer func() {
 			if err != nil {
-				otherErr := resumeCurrentContainer(currentContainerID, options.Name, cli)
+				otherErr := containerator.ResumeContainer(cli, currentContainerID, options.Name)
 				if otherErr != nil {
 					err = fmt.Errorf("%v (%v)", err, otherErr)
 				}
 			} else {
-				err = removeCurrentContainer(currentContainerID, cli)
+				err = containerator.RemoveContainer(cli, currentContainerID)
 			}
 		}()
 	}
