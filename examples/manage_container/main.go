@@ -1,3 +1,4 @@
+// Program manage_container shows usage of *containerator* functions that run and remove containers.
 package main
 
 import (
