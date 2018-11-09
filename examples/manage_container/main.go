@@ -63,12 +63,13 @@ const (
 
 // TODO
 // --tag
-// --remove
 func run() error {
 	var configPathOption string
 	flag.StringVar(&configPathOption, "config", defaultConfigName, "configuration file")
 	var modeOption string
 	flag.StringVar(&modeOption, "mode", "", "mode")
+	var removeOption bool
+	flag.BoolVar(&removeOption, "remove", false, "remove container")
 	var forceOption bool
 	flag.BoolVar(&forceOption, "force", false, "force container creation")
 
@@ -95,6 +96,20 @@ func run() error {
 	currentContainer, err := containerator.FindContainerByName(cli, containerName)
 	if err != nil {
 		return err
+	}
+
+	if removeOption {
+		if currentContainer != nil {
+			err = containerator.RemoveContainer(cli, currentContainer.ID)
+			if err != nil {
+				return err
+			}
+			log.Println("Container is removed")
+
+		} else {
+			log.Println("There is no container")
+		}
+		return nil
 	}
 
 	image, err := findImage(cli, config)
