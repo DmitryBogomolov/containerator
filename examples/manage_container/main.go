@@ -1,3 +1,4 @@
+// Program manage_container shows usage of *containerator* functions that run and remove containers.
 package main
 
 import (
@@ -57,18 +58,17 @@ func updateContainer(options *containerator.RunContainerOptions, currentContaine
 	return
 }
 
-const (
-	defaultConfigName = "config.yaml"
-)
+const defaultConfigName = "config.yaml"
 
-// TODO
-// --tag
-// --remove
 func run() error {
 	var configPathOption string
 	flag.StringVar(&configPathOption, "config", defaultConfigName, "configuration file")
 	var modeOption string
 	flag.StringVar(&modeOption, "mode", "", "mode")
+	var tagOption string
+	flag.StringVar(&tagOption, "tag", "", "image tag")
+	var removeOption bool
+	flag.BoolVar(&removeOption, "remove", false, "remove container")
 	var forceOption bool
 	flag.BoolVar(&forceOption, "force", false, "force container creation")
 
@@ -97,7 +97,21 @@ func run() error {
 		return err
 	}
 
-	image, err := findImage(cli, config)
+	if removeOption {
+		if currentContainer != nil {
+			err = containerator.RemoveContainer(cli, currentContainer.ID)
+			if err != nil {
+				return err
+			}
+			log.Println("Container is removed")
+
+		} else {
+			log.Println("There is no container")
+		}
+		return nil
+	}
+
+	image, err := findImage(cli, config.ImageRepo, tagOption)
 	if err != nil {
 		return err
 	}
