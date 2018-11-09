@@ -43,13 +43,24 @@ func getContainerName(imageRepo string, mode string) string {
 	return name
 }
 
-func findImage(cli client.ImageAPIClient, config *config) (*types.ImageSummary, error) {
-	list, err := containerator.FindImagesByRepo(cli, config.ImageRepo)
+func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*types.ImageSummary, error) {
+	if imageTag != "" {
+		repoTag := imageRepo + ":" + imageTag
+		item, err := containerator.FindImageByRepoTag(cli, repoTag)
+		if err != nil {
+			return nil, err
+		}
+		if item == nil {
+			return nil, fmt.Errorf("no '%s' image", repoTag)
+		}
+		return item, nil
+	}
+	list, err := containerator.FindImagesByRepo(cli, imageRepo)
 	if err != nil {
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("no '%s' images", config.ImageRepo)
+		return nil, fmt.Errorf("no '%s' images", imageRepo)
 	}
 	return list[0], nil
 }

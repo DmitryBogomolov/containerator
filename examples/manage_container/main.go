@@ -57,17 +57,15 @@ func updateContainer(options *containerator.RunContainerOptions, currentContaine
 	return
 }
 
-const (
-	defaultConfigName = "config.yaml"
-)
+const defaultConfigName = "config.yaml"
 
-// TODO
-// --tag
 func run() error {
 	var configPathOption string
 	flag.StringVar(&configPathOption, "config", defaultConfigName, "configuration file")
 	var modeOption string
 	flag.StringVar(&modeOption, "mode", "", "mode")
+	var tagOption string
+	flag.StringVar(&tagOption, "tag", "", "image tag")
 	var removeOption bool
 	flag.BoolVar(&removeOption, "remove", false, "remove container")
 	var forceOption bool
@@ -112,7 +110,7 @@ func run() error {
 		return nil
 	}
 
-	image, err := findImage(cli, config)
+	image, err := findImage(cli, config.ImageRepo, tagOption)
 	if err != nil {
 		return err
 	}
