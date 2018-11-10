@@ -20,15 +20,17 @@ func handleRemove(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "OK\n")
 }
 
-func setupServer() {
-	http.HandleFunc("/run/", handleRun)
-	http.HandleFunc("/remove/", handleRemove)
+func setupServer() *http.ServeMux {
+	server := http.NewServeMux()
+	server.HandleFunc("/run/", handleRun)
+	server.HandleFunc("/remove/", handleRemove)
+	return server
 }
 
 type errorChan chan error
 
-func runServer(port int, ch errorChan) {
-	ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+func runServer(port int, handler http.Handler, ch errorChan) {
+	ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
 
 func main() {
@@ -38,8 +40,8 @@ func main() {
 
 	ch := make(errorChan)
 
-	setupServer()
-	go runServer(port, ch)
+	handler := setupServer()
+	go runServer(port, handler, ch)
 	log.Printf("Listening %d...", port)
 
 	err := <-ch
