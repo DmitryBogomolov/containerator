@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +14,8 @@ import (
 
 const defaultPort = 4001
 
+var errBadCommand = errors.New("bad command")
+
 func handleCommand(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")[1:]
 	if len(parts) != 2 {
@@ -23,19 +25,19 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	targetConfig := findTarget(parts[0])
 	if targetConfig == "" {
 		http.Error(w, "Bad name", http.StatusNotFound)
+		return
 	}
-	switch parts[1] {
-	case "run":
-		invokeRun(targetConfig, r)
-		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, "OK\n")
-	case "remove":
-		invokeRemove(targetConfig)
-		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, "OK\n")
-	default:
-		http.Error(w, "Bad command", http.StatusBadRequest)
+	body := ""
+	err := errBadCommand
+	if parts[1] == "manage" {
+		body, err = invokeManage(targetConfig, r)
 	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, body)
 }
 
 func findTarget(name string) string {
@@ -49,10 +51,16 @@ func findTarget(name string) string {
 	return ""
 }
 
-func invokeRun(config string, r *http.Request) {
-}
-
-func invokeRemove(config string) {
+func invokeManage(config string, r *http.Request) (string, error) {
+	err := r.ParseForm()
+	if err != nil {
+		return "", err
+	}
+	mode := r.FormValue("mode")
+	tag := r.FormValue("tag")
+	force := r.FormValue("force")
+	remove := r.FormValue("remove")
+	return mode + tag + force + remove, nil
 }
 
 func setupServer() *http.ServeMux {
