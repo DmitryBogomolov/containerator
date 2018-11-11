@@ -3,27 +3,61 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 const defaultPort = 4001
 
-func handleRun(w http.ResponseWriter, r *http.Request) {
-	log.Printf("run")
-	fmt.Fprintf(w, "OK\n")
+func handleCommand(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")[1:]
+	if len(parts) != 2 {
+		http.Error(w, "Bad url", http.StatusBadRequest)
+		return
+	}
+	targetConfig := findTarget(parts[0])
+	if targetConfig == "" {
+		http.Error(w, "Bad name", http.StatusNotFound)
+	}
+	switch parts[1] {
+	case "run":
+		invokeRun(targetConfig, r)
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "OK\n")
+	case "remove":
+		invokeRemove(targetConfig)
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "OK\n")
+	default:
+		http.Error(w, "Bad command", http.StatusBadRequest)
+	}
 }
 
-func handleRemove(w http.ResponseWriter, r *http.Request) {
-	log.Printf("remove")
-	fmt.Fprintf(w, "OK\n")
+func findTarget(name string) string {
+	dir, _ := os.Getwd()
+	items, _ := ioutil.ReadDir(dir)
+	for _, item := range items {
+		if item.IsDir() && item.Name() == name {
+			return filepath.Join(dir, name, "config.yaml")
+		}
+	}
+	return ""
+}
+
+func invokeRun(config string, r *http.Request) {
+}
+
+func invokeRemove(config string) {
 }
 
 func setupServer() *http.ServeMux {
 	server := http.NewServeMux()
-	server.HandleFunc("/run/", handleRun)
-	server.HandleFunc("/remove/", handleRemove)
+	server.HandleFunc("/", handleCommand)
 	return server
 }
 
