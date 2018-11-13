@@ -1,6 +1,7 @@
 package containerator
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -33,6 +34,9 @@ func GetContainerShortID(container *types.Container) string {
 	return container.ID[:shortIDLength]
 }
 
+// ErrContainerNotFound is returned when image is not found with a given criteria.
+var ErrContainerNotFound = errors.New("container is not found")
+
 /*
 FindContainerByID searches container by id.
 
@@ -50,7 +54,7 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 			return &containers[i], nil
 		}
 	}
-	return nil, nil
+	return nil, ErrContainerNotFound
 }
 
 /*
@@ -71,7 +75,7 @@ func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Co
 			return &containers[i], nil
 		}
 	}
-	return nil, nil
+	return nil, ErrContainerNotFound
 }
 
 /*
@@ -94,7 +98,7 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 			}
 		}
 	}
-	return nil, nil
+	return nil, ErrContainerNotFound
 }
 
 /*

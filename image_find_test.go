@@ -74,7 +74,7 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[1], "image")
 
 		image, err = FindImageByID(cli, "unknown")
-		assertEqual(t, err, nil, "error")
+		assertEqual(t, err, ErrImageNotFound, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
@@ -87,7 +87,7 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[0], "image")
 
 		image, err = FindImageByShortID(cli, "unknown")
-		assertEqual(t, err, nil, "error")
+		assertEqual(t, err, ErrImageNotFound, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
@@ -104,7 +104,7 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[3], "image")
 
 		image, err = FindImageByRepoTag(cli, "unknown")
-		assertEqual(t, err, nil, "error")
+		assertEqual(t, err, ErrImageNotFound, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
