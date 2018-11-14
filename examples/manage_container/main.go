@@ -36,7 +36,7 @@ func run() error {
 		return err
 	}
 
-	container, err := manage.Manage(cli, config, &manage.Options{
+	options := &manage.Options{
 		Mode:   modeOption,
 		Tag:    tagOption,
 		Force:  forceOption,
@@ -48,9 +48,10 @@ func run() error {
 			}
 			return reader, nil
 		},
-	})
+	}
+	container, err := manage.Manage(cli, config, options)
 
-	if removeOption {
+	if options.Remove {
 		if err == manage.ErrNoContainer {
 			log.Println("There is no container")
 			return nil
@@ -71,7 +72,8 @@ func run() error {
 		return err
 	}
 	log.Printf("Container: %s %s\n",
-		containerator.GetContainerName(container), containerator.GetContainerShortID(container))
+		containerator.GetContainerName(container),
+		containerator.GetContainerShortID(container))
 
 	return nil
 }
