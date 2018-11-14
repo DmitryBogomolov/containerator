@@ -1,13 +1,8 @@
 package manage
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
+	"strconv"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/api/types"
@@ -64,46 +59,26 @@ func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*t
 	return list[0], nil
 }
 
-func isFileExist(file string) bool {
-	if _, err := os.Stat(file); os.IsExist(err) {
-		return true
+func buildContainerOptions(conf *Config, imageName string, containerName string,
+	modeIndex int) *containerator.RunContainerOptions {
+	ret := containerator.RunContainerOptions{
+		Image:         imageName,
+		Name:          containerName,
+		RestartPolicy: containerator.RestartAlways,
+		Network:       conf.Network,
+		Volumes:       conf.Volumes,
+		Env:           conf.Env,
 	}
-	return false
-}
-
-func getEnvFileName(dir string, mode string) string {
-	return filepath.Join(dir, fmt.Sprintf("%s.list", mode))
-}
-
-func selectEnvFile(dir string, mode string) string {
-	name := getEnvFileName(dir, mode)
-	if isFileExist(name) {
-		return name
+	if len(conf.Ports) > 0 {
+		basePort := int(conf.BasePort) + int(conf.PortOffset)*modeIndex
+		ports := make([]containerator.Mapping, len(conf.Ports))
+		for i, port := range conf.Ports {
+			ports[i] = containerator.Mapping{
+				Source: strconv.Itoa(basePort + i),
+				Target: strconv.Itoa(int(port)),
+			}
+		}
+		ret.Ports = ports
 	}
-	name = getEnvFileName(dir, "env")
-	if isFileExist(name) {
-		return name
-	}
-	return ""
-}
-
-// ErrNoEnvFile is returned when neither <mode>.list no env.list is found in a directory.
-var ErrNoEnvFile = errors.New("env file is not found")
-
-/*
-GetEnvFileReader creates *EnvReader* searching directory with specified *mode*.
-
-	GetEnvFileReader("/path/to/dir", mode) -> reader, err
-*/
-func GetEnvFileReader(configPath string, mode string) (io.Reader, error) {
-	dir, _ := filepath.Abs(filepath.Dir(configPath))
-	envFileName := selectEnvFile(dir, mode)
-	if envFileName == "" {
-		return nil, ErrNoEnvFile
-	}
-	data, err := ioutil.ReadFile(envFileName)
-	if err != nil {
-		return nil, err
-	}
-	return strings.NewReader(string(data)), nil
+	return &ret
 }

@@ -7,36 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
-
-func buildContainerOptions(conf *Config, imageName string, containerName string,
-	modeIndex int) *containerator.RunContainerOptions {
-	ret := containerator.RunContainerOptions{
-		Image:         imageName,
-		Name:          containerName,
-		RestartPolicy: containerator.RestartAlways,
-		Network:       conf.Network,
-		Volumes:       conf.Volumes,
-		Env:           conf.Env,
-	}
-	if len(conf.Ports) > 0 {
-		basePort := int(conf.BasePort) + int(conf.PortOffset)*modeIndex
-		ports := make([]containerator.Mapping, len(conf.Ports))
-		for i, port := range conf.Ports {
-			ports[i] = containerator.Mapping{
-				Source: strconv.Itoa(basePort + i),
-				Target: strconv.Itoa(int(port)),
-			}
-		}
-		ret.Ports = ports
-	}
-	return &ret
-}
 
 func updateContainer(options *containerator.RunContainerOptions, currentContainer *types.Container,
 	cli client.ContainerAPIClient) (container *types.Container, err error) {
