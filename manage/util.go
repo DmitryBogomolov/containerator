@@ -41,13 +41,10 @@ func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*t
 	if imageTag != "" {
 		repoTag := imageRepo + ":" + imageTag
 		item, err := containerator.FindImageByRepoTag(cli, repoTag)
-		if err != nil {
-			return nil, err
+		if err == containerator.ErrImageNotFound {
+			err = fmt.Errorf("no '%s' image (%v)", repoTag, err)
 		}
-		if item == nil {
-			return nil, fmt.Errorf("no '%s' image", repoTag)
-		}
-		return item, nil
+		return item, err
 	}
 	list, err := containerator.FindImagesByRepo(cli, imageRepo)
 	if err != nil {
