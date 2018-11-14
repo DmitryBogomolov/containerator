@@ -11,10 +11,8 @@ import (
 )
 
 func isFileExist(file string) bool {
-	if _, err := os.Stat(file); os.IsExist(err) {
-		return true
-	}
-	return false
+	stat, err := os.Stat(file)
+	return err == nil && !stat.IsDir()
 }
 
 func getEnvFileName(dir string, mode string) string {
@@ -41,9 +39,8 @@ GetEnvFileReader creates *EnvReader* searching directory with specified *mode*.
 
 	GetEnvFileReader("/path/to/dir", mode) -> reader, err
 */
-func GetEnvFileReader(configPath string, mode string) (io.Reader, error) {
-	dir, _ := filepath.Abs(filepath.Dir(configPath))
-	envFileName := selectEnvFile(dir, mode)
+func GetEnvFileReader(dirPath string, mode string) (io.Reader, error) {
+	envFileName := selectEnvFile(dirPath, mode)
 	if envFileName == "" {
 		return nil, ErrNoEnvFile
 	}
