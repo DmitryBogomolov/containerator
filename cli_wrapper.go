@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	contextTimeout = 3 * time.Second
+	contextTimeout = 10 * time.Second
 )
 
 func getContext() (context.Context, context.CancelFunc) {
