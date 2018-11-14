@@ -1,4 +1,4 @@
-package main
+package manage
 
 import (
 	"io/ioutil"
@@ -7,7 +7,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type config struct {
+/*
+Config contains options for container management.
+
+*ImageRepo* is required, others are optional.
+*/
+type Config struct {
 	ImageRepo  string                  `yaml:"image_repo"`
 	Network    string                  `yaml:"network"`
 	BasePort   float64                 `yaml:"base_port"`
@@ -18,12 +23,16 @@ type config struct {
 	Modes      []string                `yaml:"modes"`
 }
 
-func readConfig(pathToFile string) (*config, error) {
+/*
+ReadConfig read config from yaml file.
+
+	ReadConfig("/path/to/config,yaml") -> &config, err
+*/
+func ReadConfig(pathToFile string) (conf *Config, err error) {
 	bytes, err := ioutil.ReadFile(pathToFile)
 	if err != nil {
-		return nil, err
+		return
 	}
-	var data config
-	err = yaml.Unmarshal(bytes, &data)
-	return &data, err
+	err = yaml.Unmarshal(bytes, conf)
+	return
 }

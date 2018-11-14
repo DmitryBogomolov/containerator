@@ -4,6 +4,10 @@
 
 Contains helper functions to work with docker containers.
 
+# manage
+
+Contains function to run, suspend, resume, remove containers.
+
 ### Examples
 
 - [find_image](./examples/find_image/README.md)
