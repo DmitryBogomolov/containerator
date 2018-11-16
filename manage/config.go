@@ -28,11 +28,12 @@ ReadConfig read config from yaml file.
 
 	ReadConfig("/path/to/config,yaml") -> &config, err
 */
-func ReadConfig(pathToFile string) (conf *Config, err error) {
+func ReadConfig(pathToFile string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(pathToFile)
 	if err != nil {
-		return
+		return nil, err
 	}
-	err = yaml.Unmarshal(bytes, conf)
-	return
+	var conf Config
+	err = yaml.Unmarshal(bytes, &conf)
+	return &conf, err
 }
