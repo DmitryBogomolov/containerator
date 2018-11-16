@@ -11,11 +11,9 @@ import (
 
 func TestGetEnvFileReader(t *testing.T) {
 	ioutil.WriteFile("env.list", []byte("c1"), os.ModePerm)
+	defer os.Remove("env.list")
 	ioutil.WriteFile("m1.list", []byte("c2"), os.ModePerm)
-	defer func() {
-		os.Remove("env.list")
-		os.Remove("m1.list")
-	}()
+	defer os.Remove("m1.list")
 
 	read := func(reader io.Reader) string {
 		data, err := ioutil.ReadAll(reader)
