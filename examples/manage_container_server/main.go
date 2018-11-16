@@ -67,6 +67,10 @@ func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error: bad command", http.StatusBadRequest)
 		return
 	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "Error: bad method", http.StatusNotAcceptable)
+		return
+	}
 	body, err := invokeManage(h.cli, configPath, r)
 	if err != nil {
 		http.Error(w, "Error: "+err.Error(), http.StatusBadRequest)
@@ -97,15 +101,15 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 	if err != nil {
 		return "", err
 	}
+	options := &manage.Options{
+		Mode:   r.PostFormValue("mode"),
+		Tag:    r.PostFormValue("tag"),
+		Remove: parseBool(r.PostFormValue("remove")),
+		Force:  parseBool(r.PostFormValue("force")),
+	}
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return "", err
-	}
-	options := &manage.Options{
-		Mode:   r.FormValue("mode"),
-		Tag:    r.FormValue("tag"),
-		Remove: parseBool(r.FormValue("remove")),
-		Force:  parseBool(r.FormValue("force")),
 	}
 	cont, err := manage.Manage(cli, config, options)
 	if err != nil {
