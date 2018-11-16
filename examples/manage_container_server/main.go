@@ -1,3 +1,15 @@
+/*
+Program manage_container_server is an example of http server
+that manages several container projects.
+
+TODO:
+ * root page with basic description
+ * page with list of all projects
+ * button to deploy project
+ * button to remove project
+ * shows tags for image
+
+*/
 package main
 
 import (
@@ -108,6 +120,7 @@ func setupServer() (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	server := http.NewServeMux()
 	server.Handle("/", &commandHandler{cli: cli, workDir: workDir})
 	return server, nil
