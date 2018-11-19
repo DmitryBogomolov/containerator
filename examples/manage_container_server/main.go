@@ -16,12 +16,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/docker/docker/client"
@@ -34,46 +35,65 @@ const defaultPort = 4001
 var errBadURL = errors.New("bad url")
 var errNoProject = errors.New("no project")
 
+type rootHandler struct {
+	template *template.Template
+	workDir  string
+}
+
+func newRootHandler(workDir string) (*rootHandler, error) {
+	template, err := template.ParseFiles("page.html")
+	if err != nil {
+		return nil, err
+	}
+	return &rootHandler{
+		template: template,
+		workDir:  workDir,
+	}, nil
+}
+
+func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	data := struct {
+		Message string
+	}{
+		Message: "Hello World",
+	}
+	h.template.Execute(w, &data)
+}
+
 type commandHandler struct {
 	cli     client.CommonAPIClient
 	workDir string
 }
 
-var commandPattern = regexp.MustCompile("^/([\\w-]+)/([\\w-]+)")
-
-func parseCommandURL(path string) (name string, cmd string, err error) {
-	parts := commandPattern.FindStringSubmatch(path)
-	if len(parts) == 0 {
-		err = errBadURL
-		return
+func newCommandHandler(workDir string) (*commandHandler, error) {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return nil, err
 	}
-	name = parts[1]
-	cmd = parts[2]
-	return
+	return &commandHandler{
+		cli:     cli,
+		workDir: workDir,
+	}, nil
 }
 
 func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	name, command, err := parseCommandURL(r.URL.Path)
-	if err != nil {
-		http.Error(w, "Error: "+err.Error(), http.StatusBadRequest)
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+	name := strings.Replace(r.URL.Path, "/manage/", "", 1)
 	configPath, err := findTarget(h.workDir, name)
 	if err != nil {
-		http.Error(w, "Error: "+err.Error(), http.StatusNotFound)
-		return
-	}
-	if command != "manage" {
-		http.Error(w, "Error: bad command", http.StatusBadRequest)
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "Error: bad method", http.StatusNotAcceptable)
+		http.Error(w, fmt.Sprintf("'%s' is not found\n", name), http.StatusNotFound)
 		return
 	}
 	body, err := invokeManage(h.cli, configPath, r)
 	if err != nil {
-		http.Error(w, "Error: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Error: %v\n", err), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -120,13 +140,18 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 
 func setupServer() (http.Handler, error) {
 	workDir, _ := os.Getwd()
-	cli, err := client.NewEnvClient()
+	rootHandler, err := newRootHandler(workDir)
+	if err != nil {
+		return nil, err
+	}
+	commandHandler, err := newCommandHandler(workDir)
 	if err != nil {
 		return nil, err
 	}
 
 	server := http.NewServeMux()
-	server.Handle("/", &commandHandler{cli: cli, workDir: workDir})
+	server.Handle("/", rootHandler)
+	server.Handle("/manage/", commandHandler)
 	return server, nil
 }
 
