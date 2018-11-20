@@ -20,14 +20,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
-	"github.com/docker/docker/client"
-
 	"github.com/DmitryBogomolov/containerator/manage"
+	"github.com/docker/docker/client"
 )
 
 const defaultPort = 4001
@@ -35,63 +33,93 @@ const defaultPort = 4001
 var errBadURL = errors.New("bad url")
 var errNoProject = errors.New("no project")
 
-type rootHandler struct {
-	template *template.Template
-	workDir  string
+type projectItem struct {
+	Name       string
+	ConfigPath string
 }
 
-func newRootHandler(workDir string) (*rootHandler, error) {
-	template, err := template.ParseFiles("page.html")
-	if err != nil {
-		return nil, err
+type projectsCache struct {
+	Dir   string
+	Items []projectItem
+}
+
+func (obj *projectsCache) refresh() {
+	obj.Items = []projectItem{
+		projectItem{
+			Name:       "Project 1",
+			ConfigPath: "/at",
+		},
+		projectItem{
+			Name:       "Project 2",
+			ConfigPath: "/gv",
+		},
 	}
+}
+
+func (obj *projectsCache) get(name string) *projectItem {
+	for i, item := range obj.Items {
+		if item.Name == name {
+			return &obj.Items[i]
+		}
+	}
+	return nil
+}
+
+func checkHTTPMethod(method string, w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != method {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return false
+	}
+	return true
+}
+
+type rootHandler struct {
+	cache    *projectsCache
+	template *template.Template
+}
+
+func newRootHandler(cache *projectsCache) (*rootHandler, error) {
+	tmpl := template.Must(template.ParseFiles("page.html"))
 	return &rootHandler{
-		template: template,
-		workDir:  workDir,
+		cache:    cache,
+		template: tmpl,
 	}, nil
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	if !checkHTTPMethod(http.MethodGet, w, r) {
 		return
 	}
-	data := struct {
-		Message string
-	}{
-		Message: "Hello World",
-	}
-	h.template.Execute(w, &data)
+	h.template.Execute(w, h.cache)
 }
 
 type commandHandler struct {
-	cli     client.CommonAPIClient
-	workDir string
+	cache *projectsCache
+	cli   client.CommonAPIClient
 }
 
-func newCommandHandler(workDir string) (*commandHandler, error) {
+func newCommandHandler(cache *projectsCache) (*commandHandler, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
 	return &commandHandler{
-		cli:     cli,
-		workDir: workDir,
+		cache: cache,
+		cli:   cli,
 	}, nil
 }
 
 func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	if !checkHTTPMethod(http.MethodPost, w, r) {
 		return
 	}
 	name := strings.Replace(r.URL.Path, "/manage/", "", 1)
-	configPath, err := findTarget(h.workDir, name)
-	if err != nil {
+	item := h.cache.get(name)
+	if item == nil {
 		http.Error(w, fmt.Sprintf("'%s' is not found\n", name), http.StatusNotFound)
 		return
 	}
-	body, err := invokeManage(h.cli, configPath, r)
+	body, err := invokeManage(h.cli, item.ConfigPath, r)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %v\n", err), http.StatusInternalServerError)
 		return
@@ -100,16 +128,16 @@ func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, body)
 }
 
-func findTarget(workDir string, name string) (string, error) {
-	items, err := filepath.Glob(filepath.Join(workDir, name, "*.yaml"))
-	if err == nil && len(items) == 0 {
-		err = errNoProject
-	}
-	if err != nil {
-		return "", err
-	}
-	return items[0], nil
-}
+// func findTarget(workDir string, name string) (string, error) {
+// 	items, err := filepath.Glob(filepath.Join(workDir, name, "*.yaml"))
+// 	if err == nil && len(items) == 0 {
+// 		err = errNoProject
+// 	}
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	return items[0], nil
+// }
 
 func parseBool(value string) bool {
 	ret, _ := strconv.ParseBool(value)
@@ -140,11 +168,13 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 
 func setupServer() (http.Handler, error) {
 	workDir, _ := os.Getwd()
-	rootHandler, err := newRootHandler(workDir)
+	cache := &projectsCache{Dir: workDir}
+	cache.refresh()
+	rootHandler, err := newRootHandler(cache)
 	if err != nil {
 		return nil, err
 	}
-	commandHandler, err := newCommandHandler(workDir)
+	commandHandler, err := newCommandHandler(cache)
 	if err != nil {
 		return nil, err
 	}
