@@ -42,8 +42,18 @@ func setupServer() (http.Handler, error) {
 	}
 
 	server := http.NewServeMux()
-	server.Handle("/", rootHandler)
 	server.Handle("/manage/", commandHandler)
+	server.Handle("/static/", http.NotFoundHandler())
+	server.HandleFunc("/static/index.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/index.js")
+	})
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		rootHandler.ServeHTTP(w, r)
+	})
 	return server, nil
 }
 
