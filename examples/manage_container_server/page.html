@@ -5,9 +5,26 @@
     </head>
     <body>
         <div>
-        {{ range .Items }}
-            <div>{{ .Name }}</div>
-        {{ end }}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Update</th>
+                        <th>Force</th>
+                        <th>Remove</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{ range .Items }}
+                    <tr>
+                        <td>{{ .Name }}</td>
+                        <td><button>Do it</button></td>
+                        <td><input type="checkbox"></input></td>
+                        <td><button>Do it</button></td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
         </div>
     </body>
 </html>

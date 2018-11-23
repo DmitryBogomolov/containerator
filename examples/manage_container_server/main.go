@@ -53,7 +53,7 @@ func runServer(port int, handler http.Handler, ch errorChan) {
 	ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
 
-func main() {
+func run() error {
 	var port int
 	flag.IntVar(&port, "port", defaultPort, "port")
 	flag.Parse()
@@ -62,13 +62,17 @@ func main() {
 
 	handler, err := setupServer()
 	if err != nil {
-		log.Fatalf("%+v\n", err)
-		os.Exit(1)
+		return err
 	}
+
 	go runServer(port, handler, ch)
 	log.Printf("Listening %d...", port)
 
-	err = <-ch
+	return <-ch
+}
+
+func main() {
+	err := run()
 	if err != nil {
 		log.Fatalf("%+v\n", err)
 		os.Exit(1)
