@@ -19,8 +19,5 @@ func newRootHandler(cache *projectsCache) (*rootHandler, error) {
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !checkHTTPMethod(http.MethodGet, w, r) {
-		return
-	}
 	h.template.Execute(w, h.cache)
 }

@@ -28,9 +28,6 @@ func newCommandHandler(cache *projectsCache) (*commandHandler, error) {
 }
 
 func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !checkHTTPMethod(http.MethodPost, w, r) {
-		return
-	}
 	name := strings.Replace(r.URL.Path, "/manage/", "", 1)
 	item := h.cache.get(name)
 	if item == nil {
