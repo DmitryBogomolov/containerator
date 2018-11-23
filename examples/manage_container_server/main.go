@@ -45,9 +45,21 @@ func setupServer() (http.Handler, error) {
 	server.Handle("/manage/", commandHandler)
 	server.Handle("/static/", http.NotFoundHandler())
 	server.HandleFunc("/static/index.js", func(w http.ResponseWriter, r *http.Request) {
+		if !checkHTTPMethod(http.MethodGet, w, r) {
+			return
+		}
 		http.ServeFile(w, r, "static/index.js")
 	})
+	server.HandleFunc("/api/projects", func(w http.ResponseWriter, r *http.Request) {
+		if !checkHTTPMethod(http.MethodGet, w, r) {
+			return
+		}
+		w.Write([]byte("{}"))
+	})
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !checkHTTPMethod(http.MethodGet, w, r) {
+			return
+		}
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
