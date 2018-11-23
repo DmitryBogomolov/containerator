@@ -2,31 +2,32 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"os"
 )
 
 type projectItem struct {
-	ID         string
-	Name       string
-	ConfigPath string
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	ConfigPath string `json:"-"`
 }
 
 type projectsCache struct {
-	Dir   string
-	Items []projectItem
+	Dir      string
+	Projects []projectItem
 }
 
 func (obj *projectsCache) refresh() {
-	obj.Items = []projectItem{
+	obj.Projects = []projectItem{
 		newProjectItem("Project 1", "/at"),
 		newProjectItem("Project 2", "/gv"),
 	}
 }
 
 func (obj *projectsCache) get(name string) *projectItem {
-	for i, item := range obj.Items {
+	for i, item := range obj.Projects {
 		if item.Name == name {
-			return &obj.Items[i]
+			return &obj.Projects[i]
 		}
 	}
 	return nil
@@ -39,12 +40,16 @@ func newProjectsCache() *projectsCache {
 	return cache
 }
 
-func newProjectItem(name string, configPath string) projectItem {
+func getProjectID(configPath string) string {
 	h := sha256.New()
 	h.Write([]byte(configPath))
-	id := string(h.Sum(nil))
+	hash := hex.EncodeToString(h.Sum(nil))
+	return hash[:8]
+}
+
+func newProjectItem(name string, configPath string) projectItem {
 	return projectItem{
-		ID:         id,
+		ID:         getProjectID(configPath),
 		Name:       name,
 		ConfigPath: configPath,
 	}

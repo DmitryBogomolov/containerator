@@ -13,6 +13,7 @@ TODO:
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -54,7 +55,10 @@ func setupServer() (http.Handler, error) {
 		if !checkHTTPMethod(http.MethodGet, w, r) {
 			return
 		}
-		w.Write([]byte("{}"))
+		encoder := json.NewEncoder(w)
+		if err := encoder.Encode(cache.Projects); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	})
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if !checkHTTPMethod(http.MethodGet, w, r) {
