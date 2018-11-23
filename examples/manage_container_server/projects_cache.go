@@ -1,8 +1,12 @@
 package main
 
-import "os"
+import (
+	"crypto/sha256"
+	"os"
+)
 
 type projectItem struct {
+	ID         string
 	Name       string
 	ConfigPath string
 }
@@ -14,14 +18,8 @@ type projectsCache struct {
 
 func (obj *projectsCache) refresh() {
 	obj.Items = []projectItem{
-		projectItem{
-			Name:       "Project 1",
-			ConfigPath: "/at",
-		},
-		projectItem{
-			Name:       "Project 2",
-			ConfigPath: "/gv",
-		},
+		newProjectItem("Project 1", "/at"),
+		newProjectItem("Project 2", "/gv"),
 	}
 }
 
@@ -39,4 +37,15 @@ func newProjectsCache() *projectsCache {
 	cache := &projectsCache{Dir: workDir}
 	cache.refresh()
 	return cache
+}
+
+func newProjectItem(name string, configPath string) projectItem {
+	h := sha256.New()
+	h.Write([]byte(configPath))
+	id := string(h.Sum(nil))
+	return projectItem{
+		ID:         id,
+		Name:       name,
+		ConfigPath: configPath,
+	}
 }
