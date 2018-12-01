@@ -3,19 +3,50 @@
     const body = table.tBodies[0];
 
     function refreshItems() {
-        return fetch('/api/projects')
-            .then(response => response.json())
-            .then((items) => {
-                items.forEach((item) => {
+        fetch('/api/projects')
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (names) {
+                body.innerHTML = '';
+                names.forEach(function (name) {
                     const row = document.createElement('tr');
-                    row.appendChild(createNameColumn(item.name));
-                    row.appendChild(createUpdateColumn(item.id));
-                    row.appendChild(createForceColumn(item.id));
-                    row.appendChild(createRemoveColumn(item.id));
+                    const ctx = {};
+                    row.appendChild(createNameColumn(name));
+                    row.appendChild(createUpdateColumn(name, ctx));
+                    row.appendChild(createForceColumn(name, ctx));
+                    row.appendChild(createRemoveColumn(name));
                     body.appendChild(row);
                 });
             })
-            .catch((err) => {
+            .catch(function (err) {
+                console.error(err);
+            });
+    }
+
+    function callManage(name, { tag, force, remove }) {
+        const formData = new FormData();
+        if (tag) {
+            formData.append('tag', tag);
+        }
+        if (force) {
+            formData.append('force', true);
+        }
+        if (remove) {
+            formData.append('remove', true);
+        }
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+        };
+        fetch('/manage/' + name, options)
+            .then(function (response) {
+                return response.json();
+            })
+            .catch(function (err) {
                 console.error(err);
             });
     }
@@ -26,29 +57,34 @@
         return column;
     }
 
-    function createUpdateColumn(id) {
+    function createUpdateColumn(name, ctx) {
         const column = document.createElement('td');
         const button = document.createElement('button');
         button.textContent = 'Do it';
-        button.addEventListener('click', () => {
+        button.addEventListener('click', function () {
+            callManage(name, { force: ctx.isForced() });
         });
         column.appendChild(button);
         return column;
     }
 
-    function createForceColumn(id) {
+    function createForceColumn(name, ctx) {
         const column = document.createElement('td');
         const input = document.createElement('input');
         input.setAttribute('type', 'checkbox');
         column.appendChild(input);
+        ctx.isForced = function () {
+            return input.checked;
+        };
         return column;
     }
 
-    function createRemoveColumn(id) {
+    function createRemoveColumn(name) {
         const column = document.createElement('td');
         const button = document.createElement('button');
         button.textContent = 'Do it';
-        button.addEventListener('click', () => {
+        button.addEventListener('click', function () {
+            callManage(name, { remove: true });
         });
         column.appendChild(button);
         return column;

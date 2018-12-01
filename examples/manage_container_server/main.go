@@ -7,7 +7,8 @@ TODO:
  * page with list of all projects
  * button to deploy project
  * button to remove project
- * shows tags for image
+ * show tags for image
+ * show responses in "tray"
 
 */
 package main
