@@ -24,7 +24,42 @@
             });
     }
 
+    function findRow(node) {
+        for (let x = node; x; x = x.parentNode) {
+            if (x.dataset.id) {
+                return x;
+            }
+        }
+    }
+
+    function handleUpdateClick() {
+        const row = findRow(this);
+        const name = row.dataset.id;
+        callManage(name, {
+            force: row.querySelector('.cmd-force').checked
+        });
+    }
+
+    function handleRemoveClick() {
+        const row = findRow(this);
+        const name = row.dataset.id;
+        callManage(name, { remove: true });
+    }
+
+    function attachHandlers() {
+        const body = document.querySelector('#projects > tbody');
+        Array.from(body.children).forEach(function (row) {
+            row.querySelector('.cmd-update').addEventListener('click', handleUpdateClick);
+            row.querySelector('.cmd-remove').addEventListener('click', handleRemoveClick);
+        });
+    }
+
+    attachHandlers();
+
     function callManage(name, { tag, force, remove }) {
+        console.log('MANAGE', name, force, remove);
+        return;
+
         const formData = new FormData();
         if (tag) {
             formData.append('tag', tag);
@@ -90,6 +125,6 @@
         return column;
     }
 
-    refreshItems();
+    // refreshItems();
 
 }());
