@@ -4,44 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
-
-type commandHandler struct {
-	cache *projectsCache
-	cli   client.CommonAPIClient
-}
-
-func newCommandHandler(cache *projectsCache) (*commandHandler, error) {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return nil, err
-	}
-	return &commandHandler{
-		cache: cache,
-		cli:   cli,
-	}, nil
-}
-
-func (h *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	name := strings.Replace(r.URL.Path, "/manage/", "", 1)
-	item := h.cache.get(name)
-	if item == nil {
-		http.Error(w, fmt.Sprintf("'%s' is not found\n", name), http.StatusNotFound)
-		return
-	}
-	body, err := invokeManage(h.cli, item.ConfigPath, r)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v\n", err), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, body)
-}
 
 func parseBool(value string) bool {
 	ret, _ := strconv.ParseBool(value)

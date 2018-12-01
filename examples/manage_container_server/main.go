@@ -17,45 +17,68 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/docker/docker/client"
 )
 
 const defaultPort = 4001
 
 func checkMethod(method string, handler http.Handler) http.Handler {
-	check := func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != method {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		handler.ServeHTTP(w, r)
-	}
-	return http.HandlerFunc(check)
+	})
 }
 
 func checkPath(predicate func(p string) bool, handler http.Handler) http.Handler {
-	check := func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !predicate(r.URL.Path) {
 			http.NotFound(w, r)
 			return
 		}
 		handler.ServeHTTP(w, r)
-	}
-	return http.HandlerFunc(check)
+	})
 }
 
 func indexScriptHandler() http.Handler {
-	handle := func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/index.js")
+	})
+	return checkMethod(http.MethodGet, handler)
+}
+
+func apiManageHandler(cache *projectsCache) http.Handler {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		log.Panicln(err)
 	}
-	return checkMethod(http.MethodGet, http.HandlerFunc(handle))
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := strings.Replace(r.URL.Path, "/manage/", "", 1)
+		item := cache.get(name)
+		if item == nil {
+			http.Error(w, fmt.Sprintf("'%s' is not found\n", name), http.StatusNotFound)
+			return
+		}
+		body, err := invokeManage(cli, item.ConfigPath, r)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error: %v\n", err), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintln(w, body)
+	})
+	return checkMethod(http.MethodPost, handler)
 }
 
 func apiTagsHandler(cache *projectsCache) http.Handler {
-	handle := func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := strings.Replace(r.URL.Path, "/api/tags/", "", 1)
 		tags := []string{"3", "2", "1", name}
 		data, err := json.Marshal(tags)
@@ -66,35 +89,36 @@ func apiTagsHandler(cache *projectsCache) http.Handler {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(data)
 		w.Write([]byte("\n"))
-	}
-	return checkMethod(http.MethodGet, http.HandlerFunc(handle))
+	})
+	return checkMethod(http.MethodGet, handler)
 }
 
 func createManageHandler(handler http.Handler) http.Handler {
 	return checkMethod(http.MethodPost, handler)
 }
 
-func rootPageHandler(handler http.Handler) http.Handler {
-	h := checkPath(func(path string) bool { return path == "/" }, handler)
-	return checkMethod(http.MethodGet, h)
+func isRootPath(path string) bool {
+	return path == "/"
+}
+
+func rootPageHandler(cache *projectsCache) http.Handler {
+	tmpl := template.Must(template.ParseFiles("page.html"))
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := tmpl.Execute(w, cache)
+		if err != nil {
+			log.Printf("template error: %+v\n", err)
+		}
+	})
+	return checkMethod(http.MethodGet, checkPath(isRootPath, handler))
 }
 
 func setupServer() (http.Handler, error) {
 	cache := newProjectsCache()
-	rootHandler, err := newRootHandler(cache)
-	if err != nil {
-		return nil, err
-	}
-	commandHandler, err := newCommandHandler(cache)
-	if err != nil {
-		return nil, err
-	}
-
 	server := http.NewServeMux()
-	server.Handle("/manage/", createManageHandler(commandHandler))
 	server.Handle("/static/index.js", indexScriptHandler())
+	server.Handle("/api/manage/", apiManageHandler(cache))
 	server.Handle("/api/tags/", apiTagsHandler(cache))
-	server.Handle("/", rootPageHandler(rootHandler))
+	server.Handle("/", rootPageHandler(cache))
 	return server, nil
 }
 
