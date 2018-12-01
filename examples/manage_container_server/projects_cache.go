@@ -7,9 +7,8 @@ import (
 )
 
 type projectItem struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	ConfigPath string `json:"-"`
+	Name       string
+	ConfigPath string
 }
 
 type projectsCache struct {
@@ -19,8 +18,8 @@ type projectsCache struct {
 
 func (obj *projectsCache) refresh() {
 	obj.Projects = []projectItem{
-		newProjectItem("Project 1", "/at"),
-		newProjectItem("Project 2", "/gv"),
+		newProjectItem("project-1", "/at"),
+		newProjectItem("project-2", "/gv"),
 	}
 }
 
@@ -49,7 +48,6 @@ func getProjectID(configPath string) string {
 
 func newProjectItem(name string, configPath string) projectItem {
 	return projectItem{
-		ID:         getProjectID(configPath),
 		Name:       name,
 		ConfigPath: configPath,
 	}

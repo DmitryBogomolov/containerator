@@ -54,8 +54,12 @@ func createScriptHandler() http.Handler {
 
 func createAPIHandler(cache *projectsCache) http.Handler {
 	handle := func(w http.ResponseWriter, r *http.Request) {
+		names := make([]string, len(cache.Projects))
+		for i, p := range cache.Projects {
+			names[i] = p.Name
+		}
 		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(cache.Projects); err != nil {
+		if err := encoder.Encode(names); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
