@@ -2,6 +2,7 @@ package main
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 )
 
@@ -19,5 +20,8 @@ func newRootHandler(cache *projectsCache) (*rootHandler, error) {
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.template.Execute(w, h.cache)
+	err := h.template.Execute(w, h.cache)
+	if err != nil {
+		log.Printf("template error: %+v\n", err)
+	}
 }
