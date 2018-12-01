@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const defaultPort = 4001
@@ -46,23 +47,25 @@ func checkPath(predicate func(p string) bool, handler http.Handler) http.Handler
 	return http.HandlerFunc(check)
 }
 
-func createScriptHandler() http.Handler {
+func indexScriptHandler() http.Handler {
 	handle := func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/index.js")
 	}
 	return checkMethod(http.MethodGet, http.HandlerFunc(handle))
 }
 
-func createAPIHandler(cache *projectsCache) http.Handler {
+func apiTagsHandler(cache *projectsCache) http.Handler {
 	handle := func(w http.ResponseWriter, r *http.Request) {
-		names := make([]string, len(cache.Projects))
-		for i, p := range cache.Projects {
-			names[i] = p.Name
-		}
-		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(names); err != nil {
+		name := strings.Replace(r.URL.Path, "/api/tags/", "", 1)
+		tags := []string{"3", "2", "1", name}
+		data, err := json.Marshal(tags)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(data)
+		w.Write([]byte("\n"))
 	}
 	return checkMethod(http.MethodGet, http.HandlerFunc(handle))
 }
@@ -71,7 +74,7 @@ func createManageHandler(handler http.Handler) http.Handler {
 	return checkMethod(http.MethodPost, handler)
 }
 
-func createPageHandler(handler http.Handler) http.Handler {
+func rootPageHandler(handler http.Handler) http.Handler {
 	h := checkPath(func(path string) bool { return path == "/" }, handler)
 	return checkMethod(http.MethodGet, h)
 }
@@ -89,9 +92,9 @@ func setupServer() (http.Handler, error) {
 
 	server := http.NewServeMux()
 	server.Handle("/manage/", createManageHandler(commandHandler))
-	server.Handle("/static/index.js", createScriptHandler())
-	server.Handle("/api/projects", createAPIHandler(cache))
-	server.Handle("/", createPageHandler(rootHandler))
+	server.Handle("/static/index.js", indexScriptHandler())
+	server.Handle("/api/tags/", apiTagsHandler(cache))
+	server.Handle("/", rootPageHandler(rootHandler))
 	return server, nil
 }
 

@@ -12,10 +12,11 @@
     </head>
     <body>
         <div>
-            <table id="projects" class="table table-hover">
+            <table class="table table-hover">
                 <thead class="thead-light">
                     <tr>
                         <th>Name</th>
+                        <th>Tag</th>
                         <th>Update</th>
                         <th>Force</th>
                         <th>Remove</th>
@@ -25,6 +26,11 @@
                 {{ range .Projects }}
                     <tr data-id="{{ .Name }}">
                         <td>{{ .Name }}</td>
+                            <td>
+                                <select class="cmd-tags custom-select">
+                                    <option value="" selected>Latest</option>
+                                </select>
+                            </td>
                         <td>
                             <button class="cmd-update btn">Update</button>
                         </td>
