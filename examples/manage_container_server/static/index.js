@@ -18,20 +18,46 @@
         return sel.options[sel.options.selectedIndex].value;
     }
 
+    function addBadge(node, content, isError) {
+        const parent = node.parentNode;
+        let badge = parent.querySelector('.badge');
+        if (badge) {
+            parent.removeChild(badge);
+        }
+        badge = document.createElement('span');
+        badge.setAttribute('class', 'badge badge-' + (isError ?  'danger' : 'success'));
+        badge.textContent = isError ? 'Error' : 'Success';
+        $(badge).popover({
+            trigger: 'hover',
+            title: isError ? 'Error' : 'Success',
+            content: content
+        });
+        parent.appendChild(badge);
+    }
+
+    function handleManageClick(button, options) {
+        const row = findRow(button);
+        callManage(getRowId(row), Object.assign({ tag: getTag(row) }, options)).then(
+            function (data) {
+                const content = `${data.name} ${data.image} ${data.tag}`;
+                addBadge(button, content, false);
+            },
+            function (err) {
+                addBadge(button, err.message, true);
+            }
+        );
+    }
+
     function handleUpdateClick() {
-        const row = findRow(this);
-        callManage(getRowId(row), {
-            tag: getTag(row),
-            force: row.querySelector('.cmd-force').checked
+        handleManageClick(this, {
+            force: findRow(this).querySelector('.cmd-force').checked
         });
     }
 
     function handleRemoveClick() {
-        const row = findRow(this);
-        callManage(getRowId(row), {
-            tag: getTag(row),
+        handleManageClick(this, {
             remove: true
-        });
+        })
     }
 
     function createSelectOption(tag) {
@@ -47,19 +73,6 @@
         });
     }
 
-    function displayOptionItemsError(sel, err) {
-        const badge = document.createElement('span');
-        sel.setAttribute('class', sel.getAttribute('class') + ' ' + 'reduced-width')
-        badge.setAttribute('class', 'badge badge-danger');
-        badge.textContent = 'Error';
-        sel.parentNode.appendChild(badge);
-        $(badge).popover({
-            trigger: 'hover',
-            title: 'Error',
-            content: err.message
-        });
-    }
-
     function attachHandlers() {
         const body = document.querySelector('.table > tbody');
         Array.from(body.children).forEach(function (row) {
@@ -71,21 +84,21 @@
                     addOptionItems(sel, tags);
                 },
                 function (err) {
-                    displayOptionItemsError(sel, err);
+                    sel.classList.add('reduced-width');
+                    addBadge(sel, err.message, true);
                 }
             );
         });
     }
 
     function loadTags(name) {
-        return fetch('/api/tags/' + name)
-            .then(function (response) {
-                return response.ok
-                    ? response.json()
-                    : response.text().then(function (text) {
-                        throw new Error(text);
-                    });
-            });
+        return fetch('/api/tags/' + name).then(function (response) {
+            return response.ok
+                ? response.json()
+                : response.text().then(function (text) {
+                    throw new Error(text);
+                });
+        });
     }
 
     function callManage(name, { tag, force, remove }) {
@@ -106,17 +119,13 @@
             },
             body: formData
         };
-        fetch('/api/manage/' + name, options)
-            .then(function (response) {
-                return response.ok
-                    ? response.json()
-                    : response.text().then(function (text) {
-                        throw new Error(text);
-                    });
-            })
-            .catch(function (err) {
-                console.error(err);
-            });
+        return fetch('/api/manage/' + name, options).then(function (response) {
+            return response.ok
+                ? response.json()
+                : response.text().then(function (text) {
+                    throw new Error(text);
+                });
+        });
     }
 
 }());

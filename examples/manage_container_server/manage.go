@@ -3,16 +3,28 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
 
 	"github.com/DmitryBogomolov/containerator/manage"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
 func parseBool(value string) bool {
 	ret, _ := strconv.ParseBool(value)
 	return ret
+}
+
+func getTag(cli client.CommonAPIClient, cont *types.Container) string {
+	image, err := containerator.FindImageByID(cli, cont.ImageID)
+	if err != nil {
+		return err.Error()
+	}
+	fullName := containerator.GetImageFullName(image)
+	name := containerator.GetImageName(image)
+	return strings.TrimPrefix(fullName, name)[1:]
 }
 
 func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request) (map[string]string, error) {
@@ -37,5 +49,6 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 	return map[string]string{
 		"name":  containerator.GetContainerName(cont),
 		"image": config.ImageRepo,
+		"tag":   getTag(cli, cont),
 	}, nil
 }
