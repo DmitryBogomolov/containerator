@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator"
+
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
@@ -15,10 +15,10 @@ func parseBool(value string) bool {
 	return ret
 }
 
-func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request) (string, error) {
+func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request) (map[string]string, error) {
 	err := r.ParseForm()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	options := &manage.Options{
 		Mode:   r.PostFormValue("mode"),
@@ -28,11 +28,14 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 	}
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	cont, err := manage.Manage(cli, config, options)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return fmt.Sprintf("Container: %s", containerator.GetContainerName(cont)), nil
+	return map[string]string{
+		"name":  containerator.GetContainerName(cont),
+		"image": config.ImageRepo,
+	}, nil
 }

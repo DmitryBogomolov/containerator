@@ -41,16 +41,20 @@
         return opt;
     }
 
+    function addOptionItems(row, tags) {
+        const sel = row.querySelector('.cmd-tags');
+        tags.map(createSelectOption).forEach(function (item) {
+            sel.appendChild(item);
+        });
+    }
+
     function attachHandlers() {
         const body = document.querySelector('.table > tbody');
         Array.from(body.children).forEach(function (row) {
             row.querySelector('.cmd-update').addEventListener('click', handleUpdateClick);
             row.querySelector('.cmd-remove').addEventListener('click', handleRemoveClick);
             loadTags(getRowId(row)).then(function (tags) {
-                const sel = row.querySelector('.cmd-tags');
-                tags.map(createSelectOption).forEach(function (item) {
-                    sel.appendChild(item);
-                });
+                addOptionItems(row, tags);
             });
         });
     }
@@ -58,7 +62,11 @@
     function loadTags(name) {
         return fetch('/api/tags/' + name)
             .then(function (response) {
-                return response.json();
+                return response.ok
+                    ? response.json()
+                    : response.text().then(function (text) {
+                        throw new Error(text);
+                    });
             })
             .catch(function (err) {
                 console.error(err);
@@ -86,7 +94,11 @@
         };
         fetch('/api/manage/' + name, options)
             .then(function (response) {
-                return response.json();
+                return response.ok
+                    ? response.json()
+                    : response.text().then(function (text) {
+                        throw new Error(text);
+                    });
             })
             .catch(function (err) {
                 console.error(err);

@@ -76,6 +76,17 @@ func getProject(r *http.Request, prefix string, cache *projectsCache) (*projectI
 	return item, nil
 }
 
+func sendJSON(value interface{}, w http.ResponseWriter) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(data)
+	w.Write([]byte("\n"))
+}
+
 func apiManageHandler(cache *projectsCache) http.Handler {
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -87,12 +98,12 @@ func apiManageHandler(cache *projectsCache) http.Handler {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		body, err := invokeManage(cli, item.ConfigPath, r)
+		ret, err := invokeManage(cli, item.ConfigPath, r)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error: %v\n", err), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintln(w, body)
+		sendJSON(ret, w)
 	})
 }
 
@@ -104,14 +115,7 @@ func apiTagsHandler(cache *projectsCache) http.Handler {
 			return
 		}
 		tags := []string{"3", "2", "1", item.Name}
-		data, err := json.Marshal(tags)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(data)
-		w.Write([]byte("\n"))
+		sendJSON(tags, w)
 	})
 }
 
