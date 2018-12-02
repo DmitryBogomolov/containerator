@@ -3,11 +3,6 @@ Program manage_container_server is an example of http server
 that manages several container projects.
 
 TODO:
- * root page with basic description
- * page with list of all projects
- * button to deploy project
- * button to remove project
- * show tags for image
  * show responses in "tray"
 
 */
@@ -27,8 +22,10 @@ import (
 )
 
 const defaultPort = 4001
+const apiManageRoute = "/api/manage/"
+const apiTagsRoute = "/api/tags/"
 
-func checkMethod(method string, handler http.Handler) http.Handler {
+func restrictMethod(method string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != method {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -38,7 +35,15 @@ func checkMethod(method string, handler http.Handler) http.Handler {
 	})
 }
 
-func checkPath(predicate func(p string) bool, handler http.Handler) http.Handler {
+func onlyGet(handler http.Handler) http.Handler {
+	return restrictMethod(http.MethodGet, handler)
+}
+
+func onlyPost(handler http.Handler) http.Handler {
+	return restrictMethod(http.MethodPost, handler)
+}
+
+func restrictPath(predicate func(p string) bool, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !predicate(r.URL.Path) {
 			http.NotFound(w, r)
@@ -48,11 +53,27 @@ func checkPath(predicate func(p string) bool, handler http.Handler) http.Handler
 	})
 }
 
+func isRootPath(path string) bool {
+	return path == "/"
+}
+
+func onlyRootPath(handler http.Handler) http.Handler {
+	return restrictPath(isRootPath, handler)
+}
+
 func indexScriptHandler() http.Handler {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/index.js")
 	})
-	return checkMethod(http.MethodGet, handler)
+}
+
+func getProject(r *http.Request, prefix string, cache *projectsCache) (*projectItem, error) {
+	name := strings.TrimPrefix(r.URL.Path, prefix)
+	item := cache.get(name)
+	if item == nil {
+		return nil, fmt.Errorf("project '%s' is not found", name)
+	}
+	return item, nil
 }
 
 func apiManageHandler(cache *projectsCache) http.Handler {
@@ -60,11 +81,10 @@ func apiManageHandler(cache *projectsCache) http.Handler {
 	if err != nil {
 		log.Panicln(err)
 	}
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := strings.Replace(r.URL.Path, "/manage/", "", 1)
-		item := cache.get(name)
-		if item == nil {
-			http.Error(w, fmt.Sprintf("'%s' is not found\n", name), http.StatusNotFound)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		item, err := getProject(r, apiManageRoute, cache)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		body, err := invokeManage(cli, item.ConfigPath, r)
@@ -74,13 +94,16 @@ func apiManageHandler(cache *projectsCache) http.Handler {
 		}
 		fmt.Fprintln(w, body)
 	})
-	return checkMethod(http.MethodPost, handler)
 }
 
 func apiTagsHandler(cache *projectsCache) http.Handler {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := strings.Replace(r.URL.Path, "/api/tags/", "", 1)
-		tags := []string{"3", "2", "1", name}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		item, err := getProject(r, apiTagsRoute, cache)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		tags := []string{"3", "2", "1", item.Name}
 		data, err := json.Marshal(tags)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,35 +113,25 @@ func apiTagsHandler(cache *projectsCache) http.Handler {
 		w.Write(data)
 		w.Write([]byte("\n"))
 	})
-	return checkMethod(http.MethodGet, handler)
-}
-
-func createManageHandler(handler http.Handler) http.Handler {
-	return checkMethod(http.MethodPost, handler)
-}
-
-func isRootPath(path string) bool {
-	return path == "/"
 }
 
 func rootPageHandler(cache *projectsCache) http.Handler {
 	tmpl := template.Must(template.ParseFiles("page.html"))
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := tmpl.Execute(w, cache)
 		if err != nil {
 			log.Printf("template error: %+v\n", err)
 		}
 	})
-	return checkMethod(http.MethodGet, checkPath(isRootPath, handler))
 }
 
 func setupServer() (http.Handler, error) {
 	cache := newProjectsCache()
 	server := http.NewServeMux()
-	server.Handle("/static/index.js", indexScriptHandler())
-	server.Handle("/api/manage/", apiManageHandler(cache))
-	server.Handle("/api/tags/", apiTagsHandler(cache))
-	server.Handle("/", rootPageHandler(cache))
+	server.Handle("/static/index.js", onlyGet(indexScriptHandler()))
+	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache)))
+	server.Handle(apiTagsRoute, onlyGet(apiTagsHandler(cache)))
+	server.Handle("/", onlyRootPath(onlyGet(rootPageHandler(cache))))
 	return server, nil
 }
 

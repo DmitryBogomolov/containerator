@@ -84,7 +84,7 @@
             },
             body: formData
         };
-        fetch('/manage/' + name, options)
+        fetch('/api/manage/' + name, options)
             .then(function (response) {
                 return response.json();
             })
