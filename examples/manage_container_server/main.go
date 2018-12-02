@@ -4,7 +4,9 @@ that manages several container projects.
 
 TODO:
  * show responses in "tray"
-
+ * refresh projects on time interval
+ * refresh projects on 'not-found' error
+ * add command status popups
 */
 package main
 
