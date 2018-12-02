@@ -41,10 +41,22 @@
         return opt;
     }
 
-    function addOptionItems(row, tags) {
-        const sel = row.querySelector('.cmd-tags');
+    function addOptionItems(sel, tags) {
         tags.map(createSelectOption).forEach(function (item) {
             sel.appendChild(item);
+        });
+    }
+
+    function displayOptionItemsError(sel, err) {
+        const badge = document.createElement('span');
+        sel.setAttribute('class', sel.getAttribute('class') + ' ' + 'reduced-width')
+        badge.setAttribute('class', 'badge badge-danger');
+        badge.textContent = 'Error';
+        sel.parentNode.appendChild(badge);
+        $(badge).popover({
+            trigger: 'hover',
+            title: 'Error',
+            content: err.message
         });
     }
 
@@ -53,9 +65,15 @@
         Array.from(body.children).forEach(function (row) {
             row.querySelector('.cmd-update').addEventListener('click', handleUpdateClick);
             row.querySelector('.cmd-remove').addEventListener('click', handleRemoveClick);
-            loadTags(getRowId(row)).then(function (tags) {
-                addOptionItems(row, tags);
-            });
+            const sel = row.querySelector('.cmd-tags');
+            loadTags(getRowId(row)).then(
+                function (tags) {
+                    addOptionItems(sel, tags);
+                },
+                function (err) {
+                    displayOptionItemsError(sel, err);
+                }
+            );
         });
     }
 
@@ -67,10 +85,6 @@
                     : response.text().then(function (text) {
                         throw new Error(text);
                     });
-            })
-            .catch(function (err) {
-                console.error(err);
-                return [];
             });
     }
 
