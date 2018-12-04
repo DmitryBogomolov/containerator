@@ -160,3 +160,17 @@ func FindImagesByRepo(cli client.ImageAPIClient, repo string) ([]*types.ImageSum
 	}
 	return ret, nil
 }
+
+/*
+GetImageTags extracts tags from list of images.
+
+	GetImageTags(images) -> []string{"1", "2", "3"}
+*/
+func GetImageTags(images []*types.ImageSummary) []string {
+	items := make([]string, len(images))
+	for i, image := range images {
+		_, tag := SplitImageNameTag(GetImageFullName(image))
+		items[i] = tag
+	}
+	return items
+}

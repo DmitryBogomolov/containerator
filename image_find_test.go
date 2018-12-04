@@ -140,3 +140,16 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, len(images), 0, "images count")
 	})
 }
+
+func TestGetImageTags(t *testing.T) {
+	tags := GetImageTags([]*types.ImageSummary{
+		&types.ImageSummary{RepoTags: []string{"a:1"}},
+		&types.ImageSummary{RepoTags: []string{"a:2"}},
+		&types.ImageSummary{RepoTags: []string{"a"}},
+	})
+
+	assertEqual(t, len(tags), 3, "count")
+	assertEqual(t, tags[0], "1", "item 1")
+	assertEqual(t, tags[1], "2", "item 1")
+	assertEqual(t, tags[2], "", "item 1")
+}
