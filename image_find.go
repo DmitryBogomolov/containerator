@@ -22,19 +22,18 @@ func GetImageFullName(image *types.ImageSummary) string {
 	return ""
 }
 
-func extractRepo(repoTag string) string {
-	return strings.SplitN(repoTag, ":", 2)[0]
-}
-
 /*
-GetImageName returns friendly image name.
+SplitImageNameTag splits full image name into repository and tag parts.
 
-Takes only repository part of image name.
-
-	GetImageName(&image) -> "my-image"
+	SplitImageNameTag("my-image:1") -> "my-image", "1"
 */
-func GetImageName(image *types.ImageSummary) string {
-	return extractRepo(GetImageFullName(image))
+func SplitImageNameTag(fullName string) (name string, tag string) {
+	items := strings.SplitN(fullName, ":", 2)
+	name = items[0]
+	if len(items) > 1 {
+		tag = items[1]
+	}
+	return
 }
 
 const (
@@ -112,8 +111,9 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 		return nil, err
 	}
 	val := repoTag
-	if extractRepo(val) == val {
-		val = val + ":latest"
+	_, tag := SplitImageNameTag(val)
+	if tag == "" {
+		val += ":latest"
 	}
 	for i, image := range images {
 		for _, item := range image.RepoTags {

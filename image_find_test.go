@@ -18,14 +18,20 @@ func TestGetImageFullName(t *testing.T) {
 	assertEqual(t, name, "a:1", "name")
 }
 
-func TestGetImageName(t *testing.T) {
-	var name string
+func TestSplitImageNameTag(t *testing.T) {
+	var name, tag string
 
-	name = GetImageName(&types.ImageSummary{RepoTags: []string{}})
-	assertEqual(t, name, "", "name")
-
-	name = GetImageName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
+	name, tag = SplitImageNameTag("a:1")
 	assertEqual(t, name, "a", "name")
+	assertEqual(t, tag, "1", "tag")
+
+	name, tag = SplitImageNameTag("b")
+	assertEqual(t, name, "b", "name")
+	assertEqual(t, tag, "", "tag")
+
+	name, tag = SplitImageNameTag("")
+	assertEqual(t, name, "", "name")
+	assertEqual(t, tag, "", "tag")
 }
 
 func TestGetImageShortID(t *testing.T) {
