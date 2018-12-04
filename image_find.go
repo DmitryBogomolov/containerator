@@ -36,6 +36,18 @@ func SplitImageNameTag(fullName string) (name string, tag string) {
 	return
 }
 
+/*
+JoinImageNameTag joins image name and tag into full image name.
+
+	JoinImageNameTag("my-image", "1") -> "my-image:1"
+*/
+func JoinImageNameTag(name string, tag string) string {
+	if tag == "" {
+		tag = "latest"
+	}
+	return name + ":" + tag
+}
+
 const (
 	imageIDPrefix = "sha256:"
 	shortIDLength = 12

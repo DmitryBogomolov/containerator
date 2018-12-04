@@ -34,6 +34,16 @@ func TestSplitImageNameTag(t *testing.T) {
 	assertEqual(t, tag, "", "tag")
 }
 
+func TestJoinImageNameTag(t *testing.T) {
+	var name string
+
+	name = JoinImageNameTag("a", "1")
+	assertEqual(t, name, "a:1", "name")
+
+	name = JoinImageNameTag("b", "")
+	assertEqual(t, name, "b:latest", "name")
+}
+
 func TestGetImageShortID(t *testing.T) {
 	var id string
 
