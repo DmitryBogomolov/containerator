@@ -1,7 +1,7 @@
 package containerator
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -72,8 +72,14 @@ func GetImageShortID(image *types.ImageSummary) string {
 	return image.ID[len(imageIDPrefix) : len(imageIDPrefix)+shortIDLength]
 }
 
-// ErrImageNotFound is returned when image is not found with a given criteria.
-var ErrImageNotFound = errors.New("image is not found")
+// ImageNotFoundError indicates that image with specified ID or full name is not found.
+type ImageNotFoundError struct {
+	Image string
+}
+
+func (e *ImageNotFoundError) Error() string {
+	return fmt.Sprintf("image '%s' is not found", e.Image)
+}
 
 /*
 FindImageByID searches image by id.
@@ -92,7 +98,7 @@ func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, e
 			return &images[i], nil
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{id}
 }
 
 /*
@@ -114,7 +120,7 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSumma
 			return &images[i], nil
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{id}
 }
 
 /*
@@ -138,7 +144,7 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 			}
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{repoTag}
 }
 
 /*

@@ -64,7 +64,7 @@ func TestFindImage(t *testing.T) {
 		image, err = findImage(cli, "test-image", "4")
 
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
-		assert.EqualError(t, err, "no 'test-image:4' image (image is not found)", "error")
+		assert.EqualError(t, err, "no 'test-image:4' image (image 'test-image:4' is not found)", "error")
 	})
 
 	t.Run("Without tag", func(t *testing.T) {
