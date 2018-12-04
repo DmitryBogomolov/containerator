@@ -34,6 +34,9 @@ SplitImageNameTag splits full image name into repository and tag parts.
 	SplitImageNameTag("my-image:1") -> "my-image", "1"
 */
 func SplitImageNameTag(fullName string) (name string, tag string) {
+	if fullName == "" {
+		panic("empty string")
+	}
 	items := strings.SplitN(fullName, ":", 2)
 	name = items[0]
 	tag = tagLatest
@@ -49,6 +52,9 @@ JoinImageNameTag joins image name and tag into full image name.
 	JoinImageNameTag("my-image", "1") -> "my-image:1"
 */
 func JoinImageNameTag(name string, tag string) string {
+	if name == "" {
+		panic("empty string")
+	}
 	if tag == "" {
 		tag = tagLatest
 	}

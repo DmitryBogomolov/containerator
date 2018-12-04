@@ -28,10 +28,6 @@ func TestSplitImageNameTag(t *testing.T) {
 	name, tag = SplitImageNameTag("b")
 	assertEqual(t, name, "b", "name")
 	assertEqual(t, tag, "latest", "tag")
-
-	name, tag = SplitImageNameTag("")
-	assertEqual(t, name, "", "name")
-	assertEqual(t, tag, "latest", "tag")
 }
 
 func TestJoinImageNameTag(t *testing.T) {
