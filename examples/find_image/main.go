@@ -51,8 +51,9 @@ func run() error {
 			return err
 		}
 		fmt.Println("Images:")
-		for _, image := range images {
-			fmt.Printf("  %s\n", containerator.GetImageFullName(image))
+		tags := containerator.GetImagesTags(images)
+		for i, image := range images {
+			fmt.Printf("  %s %s\n", containerator.GetImageFullName(image), tags[i])
 		}
 	} else {
 		flag.Usage()
