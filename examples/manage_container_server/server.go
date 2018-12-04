@@ -118,8 +118,12 @@ func rootPageHandler(cache *projectsCache) http.Handler {
 	})
 }
 
-func setupServer() (http.Handler, error) {
-	cache := newProjectsCache()
+func setupServer(pathToWorkspace string) (http.Handler, error) {
+	cache := &projectsCache{
+		Workspace: pathToWorkspace,
+	}
+	cache.refresh()
+
 	server := http.NewServeMux()
 	server.Handle("/static/index.js", onlyGet(indexScriptHandler()))
 	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache)))

@@ -3,7 +3,11 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
 	"os"
+	"path/filepath"
+	"sync/atomic"
+	"time"
 )
 
 type projectItem struct {
@@ -12,15 +16,38 @@ type projectItem struct {
 }
 
 type projectsCache struct {
-	Dir      string
-	Projects []projectItem
+	locker    int32
+	Workspace string
+	Projects  []projectItem
+}
+
+func collectProjects(pattern string) []string {
+	for i := 0; i < 3; i++ {
+		matches, err := filepath.Glob(pattern)
+		if err == nil {
+			return matches
+		}
+		log.Printf("%+v", err)
+		time.Sleep(3 * time.Second)
+	}
+	log.Fatalf("failed to refresh projects")
+	return nil
 }
 
 func (obj *projectsCache) refresh() {
-	obj.Projects = []projectItem{
-		newProjectItem("project-1", "/at"),
-		newProjectItem("project-2", "/gv"),
+	if !atomic.CompareAndSwapInt32(&obj.locker, 0, 1) {
+		return
 	}
+	defer atomic.StoreInt32(&obj.locker, 0)
+	matches := collectProjects(filepath.Join(obj.Workspace, "*", "*.yaml"))
+	items := make([]projectItem, len(matches))
+	for i, m := range matches {
+		items[i] = projectItem{
+			Name:       filepath.Base(filepath.Dir(m)),
+			ConfigPath: m,
+		}
+	}
+	obj.Projects = items
 }
 
 func (obj *projectsCache) get(name string) *projectItem {
@@ -32,9 +59,9 @@ func (obj *projectsCache) get(name string) *projectItem {
 	return nil
 }
 
-func newProjectsCache() *projectsCache {
+func newProjectsCache(workspace string) *projectsCache {
 	workDir, _ := os.Getwd()
-	cache := &projectsCache{Dir: workDir}
+	cache := &projectsCache{Workspace: workDir}
 	cache.refresh()
 	return cache
 }
