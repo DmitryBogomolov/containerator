@@ -73,7 +73,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 		return nil, err
 	}
 
-	containerName := getContainerName(conf.ImageRepo, mode)
+	containerName := getContainerName(conf, mode)
 
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := containerator.FindContainerByName(containerCli, containerName)

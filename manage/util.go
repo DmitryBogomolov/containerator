@@ -29,8 +29,11 @@ func selectMode(modeOption string, conf *Config) (string, int, error) {
 	return "", 0, fmt.Errorf("mode '%s' is not valid", modeOption)
 }
 
-func getContainerName(imageRepo string, mode string) string {
-	name := imageRepo
+func getContainerName(conf *Config, mode string) string {
+	name := conf.ContainerName
+	if name == "" {
+		name = conf.ImageRepo
+	}
 	if mode != "" {
 		name += "-" + mode
 	}

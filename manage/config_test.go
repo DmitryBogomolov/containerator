@@ -20,3 +20,10 @@ func TestReadConfig(t *testing.T) {
 		Modes:     []string{"a", "b"},
 	}, *config, "config")
 }
+
+func TestReadConfigNoFile(t *testing.T) {
+	config, err := ReadConfig("test.yaml")
+
+	assert.EqualError(t, err, "open test.yaml: no such file or directory", "error")
+	assert.Equal(t, (*Config)(nil), config, "config")
+}
