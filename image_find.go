@@ -8,6 +8,12 @@ import (
 	"github.com/docker/docker/client"
 )
 
+const (
+	tagLatest     = "latest"
+	imageIDPrefix = "sha256:"
+	shortIDLength = 12
+)
+
 /*
 GetImageFullName returns full image name.
 
@@ -30,6 +36,7 @@ SplitImageNameTag splits full image name into repository and tag parts.
 func SplitImageNameTag(fullName string) (name string, tag string) {
 	items := strings.SplitN(fullName, ":", 2)
 	name = items[0]
+	tag = tagLatest
 	if len(items) > 1 {
 		tag = items[1]
 	}
@@ -43,15 +50,10 @@ JoinImageNameTag joins image name and tag into full image name.
 */
 func JoinImageNameTag(name string, tag string) string {
 	if tag == "" {
-		tag = "latest"
+		tag = tagLatest
 	}
 	return name + ":" + tag
 }
-
-const (
-	imageIDPrefix = "sha256:"
-	shortIDLength = 12
-)
 
 /*
 GetImageShortID returns short image id.
@@ -122,11 +124,7 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 	if err != nil {
 		return nil, err
 	}
-	val := repoTag
-	_, tag := SplitImageNameTag(val)
-	if tag == "" {
-		val += ":latest"
-	}
+	val := JoinImageNameTag(SplitImageNameTag(repoTag))
 	for i, image := range images {
 		for _, item := range image.RepoTags {
 			if item == val {
@@ -152,7 +150,8 @@ func FindImagesByRepo(cli client.ImageAPIClient, repo string) ([]*types.ImageSum
 	var ret []*types.ImageSummary
 	for i, image := range images {
 		for _, repoTag := range image.RepoTags {
-			if strings.Split(repoTag, ":")[0] == repo {
+			name, _ := SplitImageNameTag(repoTag)
+			if name == repo {
 				ret = append(ret, &images[i])
 				break
 			}
@@ -162,11 +161,11 @@ func FindImagesByRepo(cli client.ImageAPIClient, repo string) ([]*types.ImageSum
 }
 
 /*
-GetImageTags extracts tags from list of images.
+GetImagesTags extracts tags from list of images.
 
-	GetImageTags(images) -> []string{"1", "2", "3"}
+	GetImagesTags(images) -> []string{"1", "2", "3"}
 */
-func GetImageTags(images []*types.ImageSummary) []string {
+func GetImagesTags(images []*types.ImageSummary) []string {
 	items := make([]string, len(images))
 	for i, image := range images {
 		_, tag := SplitImageNameTag(GetImageFullName(image))

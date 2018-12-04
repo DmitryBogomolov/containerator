@@ -27,11 +27,11 @@ func TestSplitImageNameTag(t *testing.T) {
 
 	name, tag = SplitImageNameTag("b")
 	assertEqual(t, name, "b", "name")
-	assertEqual(t, tag, "", "tag")
+	assertEqual(t, tag, "latest", "tag")
 
 	name, tag = SplitImageNameTag("")
 	assertEqual(t, name, "", "name")
-	assertEqual(t, tag, "", "tag")
+	assertEqual(t, tag, "latest", "tag")
 }
 
 func TestJoinImageNameTag(t *testing.T) {
@@ -141,8 +141,8 @@ func TestFindImage(t *testing.T) {
 	})
 }
 
-func TestGetImageTags(t *testing.T) {
-	tags := GetImageTags([]*types.ImageSummary{
+func TestGetImagesTags(t *testing.T) {
+	tags := GetImagesTags([]*types.ImageSummary{
 		&types.ImageSummary{RepoTags: []string{"a:1"}},
 		&types.ImageSummary{RepoTags: []string{"a:2"}},
 		&types.ImageSummary{RepoTags: []string{"a"}},
@@ -151,5 +151,5 @@ func TestGetImageTags(t *testing.T) {
 	assertEqual(t, len(tags), 3, "count")
 	assertEqual(t, tags[0], "1", "item 1")
 	assertEqual(t, tags[1], "2", "item 1")
-	assertEqual(t, tags[2], "", "item 1")
+	assertEqual(t, tags[2], "latest", "item 1")
 }
