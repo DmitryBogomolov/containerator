@@ -28,8 +28,13 @@ func TestSelectMode(t *testing.T) {
 }
 
 func TestGetContainerName(t *testing.T) {
-	assert.Equal(t, "cont", getContainerName("cont", ""), "without mode")
-	assert.Equal(t, "cont-m1", getContainerName("cont", "m1"), "with mode")
+	var name string
+
+	name = getContainerName(&Config{ImageRepo: "cont"}, "")
+	assert.Equal(t, "cont", name, "without mode")
+
+	name = getContainerName(&Config{ImageRepo: "cont"}, "m1")
+	assert.Equal(t, "cont-m1", name, "with mode")
 }
 
 func TestFindImage(t *testing.T) {
@@ -59,7 +64,7 @@ func TestFindImage(t *testing.T) {
 		image, err = findImage(cli, "test-image", "4")
 
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
-		assert.EqualError(t, err, "no 'test-image:4' image (image is not found)", "error")
+		assert.EqualError(t, err, "no 'test-image:4' image (image 'test-image:4' is not found)", "error")
 	})
 
 	t.Run("Without tag", func(t *testing.T) {

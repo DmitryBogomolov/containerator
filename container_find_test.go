@@ -74,7 +74,8 @@ func TestFindContainer(t *testing.T) {
 		assertEqual(t, cont, &testContainers[4], "container")
 
 		cont, err = FindContainerByID(cli, "unknown")
-		assertEqual(t, err, ErrContainerNotFound, "error")
+		contErr, ok := err.(*ContainerNotFoundError)
+		assertEqual(t, ok && contErr.Container == "unknown", true, "error")
 		assertEqual(t, cont, nil, "container")
 	})
 
@@ -87,7 +88,8 @@ func TestFindContainer(t *testing.T) {
 		assertEqual(t, cont, &testContainers[3], "container")
 
 		cont, err = FindContainerByID(cli, "unknown")
-		assertEqual(t, err, ErrContainerNotFound, "error")
+		contErr, ok := err.(*ContainerNotFoundError)
+		assertEqual(t, ok && contErr.Container == "unknown", true, "error")
 		assertEqual(t, cont, nil, "container")
 	})
 
@@ -104,7 +106,8 @@ func TestFindContainer(t *testing.T) {
 		assertEqual(t, cont, &testContainers[3], "container")
 
 		cont, err = FindContainerByName(cli, "unknown")
-		assertEqual(t, err, ErrContainerNotFound, "error")
+		contErr, ok := err.(*ContainerNotFoundError)
+		assertEqual(t, ok && contErr.Container == "unknown", true, "error")
 		assertEqual(t, cont, nil, "container")
 	})
 

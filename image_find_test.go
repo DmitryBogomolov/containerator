@@ -18,14 +18,26 @@ func TestGetImageFullName(t *testing.T) {
 	assertEqual(t, name, "a:1", "name")
 }
 
-func TestGetImageName(t *testing.T) {
+func TestSplitImageNameTag(t *testing.T) {
+	var name, tag string
+
+	name, tag = SplitImageNameTag("a:1")
+	assertEqual(t, name, "a", "name")
+	assertEqual(t, tag, "1", "tag")
+
+	name, tag = SplitImageNameTag("b")
+	assertEqual(t, name, "b", "name")
+	assertEqual(t, tag, "latest", "tag")
+}
+
+func TestJoinImageNameTag(t *testing.T) {
 	var name string
 
-	name = GetImageName(&types.ImageSummary{RepoTags: []string{}})
-	assertEqual(t, name, "", "name")
+	name = JoinImageNameTag("a", "1")
+	assertEqual(t, name, "a:1", "name")
 
-	name = GetImageName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
-	assertEqual(t, name, "a", "name")
+	name = JoinImageNameTag("b", "")
+	assertEqual(t, name, "b:latest", "name")
 }
 
 func TestGetImageShortID(t *testing.T) {
@@ -74,7 +86,8 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[1], "image")
 
 		image, err = FindImageByID(cli, "unknown")
-		assertEqual(t, err, ErrImageNotFound, "error")
+		imageErr, ok := err.(*ImageNotFoundError)
+		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
@@ -87,7 +100,8 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[0], "image")
 
 		image, err = FindImageByShortID(cli, "unknown")
-		assertEqual(t, err, ErrImageNotFound, "error")
+		imageErr, ok := err.(*ImageNotFoundError)
+		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
@@ -104,7 +118,8 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, image, &testImages[3], "image")
 
 		image, err = FindImageByRepoTag(cli, "unknown")
-		assertEqual(t, err, ErrImageNotFound, "error")
+		imageErr, ok := err.(*ImageNotFoundError)
+		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
 		assertEqual(t, image, nil, "image")
 	})
 
@@ -123,4 +138,17 @@ func TestFindImage(t *testing.T) {
 		assertEqual(t, err, nil, "error")
 		assertEqual(t, len(images), 0, "images count")
 	})
+}
+
+func TestGetImagesTags(t *testing.T) {
+	tags := GetImagesTags([]*types.ImageSummary{
+		&types.ImageSummary{RepoTags: []string{"a:1"}},
+		&types.ImageSummary{RepoTags: []string{"a:2"}},
+		&types.ImageSummary{RepoTags: []string{"a"}},
+	})
+
+	assertEqual(t, len(tags), 3, "count")
+	assertEqual(t, tags[0], "1", "item 1")
+	assertEqual(t, tags[1], "2", "item 1")
+	assertEqual(t, tags[2], "latest", "item 1")
 }

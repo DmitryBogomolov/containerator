@@ -1,11 +1,17 @@
 package containerator
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+)
+
+const (
+	tagLatest     = "latest"
+	imageIDPrefix = "sha256:"
+	shortIDLength = 12
 )
 
 /*
@@ -22,25 +28,38 @@ func GetImageFullName(image *types.ImageSummary) string {
 	return ""
 }
 
-func extractRepo(repoTag string) string {
-	return strings.SplitN(repoTag, ":", 2)[0]
+/*
+SplitImageNameTag splits full image name into repository and tag parts.
+
+	SplitImageNameTag("my-image:1") -> "my-image", "1"
+*/
+func SplitImageNameTag(fullName string) (name string, tag string) {
+	if fullName == "" {
+		panic("empty string")
+	}
+	items := strings.SplitN(fullName, ":", 2)
+	name = items[0]
+	tag = tagLatest
+	if len(items) > 1 {
+		tag = items[1]
+	}
+	return
 }
 
 /*
-GetImageName returns friendly image name.
+JoinImageNameTag joins image name and tag into full image name.
 
-Takes only repository part of image name.
-
-	GetImageName(&image) -> "my-image"
+	JoinImageNameTag("my-image", "1") -> "my-image:1"
 */
-func GetImageName(image *types.ImageSummary) string {
-	return extractRepo(GetImageFullName(image))
+func JoinImageNameTag(name string, tag string) string {
+	if name == "" {
+		panic("empty string")
+	}
+	if tag == "" {
+		tag = tagLatest
+	}
+	return name + ":" + tag
 }
-
-const (
-	imageIDPrefix = "sha256:"
-	shortIDLength = 12
-)
 
 /*
 GetImageShortID returns short image id.
@@ -53,8 +72,14 @@ func GetImageShortID(image *types.ImageSummary) string {
 	return image.ID[len(imageIDPrefix) : len(imageIDPrefix)+shortIDLength]
 }
 
-// ErrImageNotFound is returned when image is not found with a given criteria.
-var ErrImageNotFound = errors.New("image is not found")
+// ImageNotFoundError indicates that image with specified ID or full name is not found.
+type ImageNotFoundError struct {
+	Image string
+}
+
+func (e *ImageNotFoundError) Error() string {
+	return fmt.Sprintf("image '%s' is not found", e.Image)
+}
 
 /*
 FindImageByID searches image by id.
@@ -73,7 +98,7 @@ func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, e
 			return &images[i], nil
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{id}
 }
 
 /*
@@ -95,7 +120,7 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSumma
 			return &images[i], nil
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{id}
 }
 
 /*
@@ -111,10 +136,7 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 	if err != nil {
 		return nil, err
 	}
-	val := repoTag
-	if extractRepo(val) == val {
-		val = val + ":latest"
-	}
+	val := JoinImageNameTag(SplitImageNameTag(repoTag))
 	for i, image := range images {
 		for _, item := range image.RepoTags {
 			if item == val {
@@ -122,7 +144,7 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 			}
 		}
 	}
-	return nil, ErrImageNotFound
+	return nil, &ImageNotFoundError{repoTag}
 }
 
 /*
@@ -140,11 +162,26 @@ func FindImagesByRepo(cli client.ImageAPIClient, repo string) ([]*types.ImageSum
 	var ret []*types.ImageSummary
 	for i, image := range images {
 		for _, repoTag := range image.RepoTags {
-			if strings.Split(repoTag, ":")[0] == repo {
+			name, _ := SplitImageNameTag(repoTag)
+			if name == repo {
 				ret = append(ret, &images[i])
 				break
 			}
 		}
 	}
 	return ret, nil
+}
+
+/*
+GetImagesTags extracts tags from list of images.
+
+	GetImagesTags(images) -> []string{"1", "2", "3"}
+*/
+func GetImagesTags(images []*types.ImageSummary) []string {
+	items := make([]string, len(images))
+	for i, image := range images {
+		_, tag := SplitImageNameTag(GetImageFullName(image))
+		items[i] = tag
+	}
+	return items
 }
