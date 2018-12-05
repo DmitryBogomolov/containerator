@@ -76,11 +76,7 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func apiManageHandler(cache *projectsCache) http.Handler {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		log.Panicln(err)
-	}
+func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		item, err := getProject(r, apiManageRoute, cache)
 		if err != nil {
@@ -96,14 +92,18 @@ func apiManageHandler(cache *projectsCache) http.Handler {
 	})
 }
 
-func apiTagsHandler(cache *projectsCache) http.Handler {
+func apiTagsHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		item, err := getProject(r, apiTagsRoute, cache)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		tags := []string{"3", "2", "1", item.Name}
+		tags, err := getImageTags(cli, item.ConfigPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		sendJSON(tags, w)
 	})
 }
@@ -124,10 +124,15 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 	}
 	cache.refresh()
 
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		log.Panicln(err)
+	}
+
 	server := http.NewServeMux()
 	server.Handle("/static/index.js", onlyGet(indexScriptHandler()))
-	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache)))
-	server.Handle(apiTagsRoute, onlyGet(apiTagsHandler(cache)))
+	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache, cli)))
+	server.Handle(apiTagsRoute, onlyGet(apiTagsHandler(cache, cli)))
 	server.Handle("/", onlyRootPath(onlyGet(rootPageHandler(cache))))
 	return server, nil
 }

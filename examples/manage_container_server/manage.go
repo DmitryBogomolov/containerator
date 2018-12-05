@@ -17,7 +17,7 @@ func parseBool(value string) bool {
 	return ret
 }
 
-func getTag(cli client.CommonAPIClient, cont *types.Container) string {
+func getTag(cli client.ImageAPIClient, cont *types.Container) string {
 	image, err := containerator.FindImageByID(cli, cont.ImageID)
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
@@ -26,7 +26,7 @@ func getTag(cli client.CommonAPIClient, cont *types.Container) string {
 	return tag
 }
 
-func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request) (map[string]string, error) {
+func invokeManage(cli interface{}, configPath string, r *http.Request) (map[string]string, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, err
@@ -48,6 +48,18 @@ func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request
 	return map[string]string{
 		"name":  containerator.GetContainerName(cont),
 		"image": config.ImageRepo,
-		"tag":   getTag(cli, cont),
+		"tag":   getTag(cli.(client.ImageAPIClient), cont),
 	}, nil
+}
+
+func getImageTags(cli interface{}, configPath string) ([]string, error) {
+	config, err := manage.ReadConfig(configPath)
+	if err != nil {
+		return nil, err
+	}
+	images, err := containerator.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageRepo)
+	if err != nil {
+		return nil, err
+	}
+	return containerator.GetImagesTags(images), nil
 }
