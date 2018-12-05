@@ -114,26 +114,13 @@
         });
     }
 
-    function callManage(name, { mode, tag, force, remove }) {
-        const formData = new FormData();
-        if (mode) {
-            formData.append('mode', mode);
-        }
-        if (tag) {
-            formData.append('tag', tag);
-        }
-        if (force) {
-            formData.append('force', true);
-        }
-        if (remove) {
-            formData.append('remove', true);
-        }
+    function callManage(name, payload) {
         const options = {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/json'
             },
-            body: formData
+            body: JSON.stringify(payload)
         };
         return fetch('/api/manage/' + name, options).then(function (response) {
             return response.ok

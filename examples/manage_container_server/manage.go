@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -26,17 +28,38 @@ func getTag(cli client.ImageAPIClient, cont *types.Container) string {
 	return tag
 }
 
+func parseRequestBody(body io.ReadCloser) *manage.Options {
+	ret := &manage.Options{}
+	var data map[string]interface{}
+	if err := json.NewDecoder(body).Decode(&data); err != nil {
+		return ret
+	}
+	defer body.Close()
+	if val, ok := data["mode"]; ok {
+		if mode, ok := val.(string); ok {
+			ret.Mode = mode
+		}
+	}
+	if val, ok := data["tag"]; ok {
+		if tag, ok := val.(string); ok {
+			ret.Tag = tag
+		}
+	}
+	if val, ok := data["force"]; ok {
+		if force, ok := val.(bool); ok {
+			ret.Force = force
+		}
+	}
+	if val, ok := data["remove"]; ok {
+		if remove, ok := val.(bool); ok {
+			ret.Remove = remove
+		}
+	}
+	return ret
+}
+
 func invokeManage(cli interface{}, configPath string, r *http.Request) (map[string]string, error) {
-	err := r.ParseForm()
-	if err != nil {
-		return nil, err
-	}
-	options := &manage.Options{
-		Mode:   r.PostFormValue("mode"),
-		Tag:    r.PostFormValue("tag"),
-		Remove: parseBool(r.PostFormValue("remove")),
-		Force:  parseBool(r.PostFormValue("force")),
-	}
+	options := parseRequestBody(r.Body)
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return nil, err
