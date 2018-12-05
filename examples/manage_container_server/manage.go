@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/DmitryBogomolov/containerator"
 
@@ -20,11 +20,10 @@ func parseBool(value string) bool {
 func getTag(cli client.CommonAPIClient, cont *types.Container) string {
 	image, err := containerator.FindImageByID(cli, cont.ImageID)
 	if err != nil {
-		return err.Error()
+		return fmt.Sprintf("Error(%+v)", err)
 	}
-	fullName := containerator.GetImageFullName(image)
-	name := containerator.GetImageName(image)
-	return strings.TrimPrefix(fullName, name)[1:]
+	_, tag := containerator.SplitImageNameTag(containerator.GetImageFullName(image))
+	return tag
 }
 
 func invokeManage(cli client.CommonAPIClient, configPath string, r *http.Request) (map[string]string, error) {
