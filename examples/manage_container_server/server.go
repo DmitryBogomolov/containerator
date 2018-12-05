@@ -11,8 +11,10 @@ import (
 	"github.com/docker/docker/client"
 )
 
-const apiManageRoute = "/api/manage/"
-const apiTagsRoute = "/api/tags/"
+const (
+	apiManageRoute = "/api/manage/"
+	apiInfoRoute   = "/api/info/"
+)
 
 func restrictMethod(method string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,19 +94,19 @@ func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 	})
 }
 
-func apiTagsHandler(cache *projectsCache, cli interface{}) http.Handler {
+func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		item, err := getProject(r, apiTagsRoute, cache)
+		item, err := getProject(r, apiInfoRoute, cache)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		tags, err := getImageTags(cli, item.ConfigPath)
+		data, err := getImageInfo(cli, item.ConfigPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		sendJSON(tags, w)
+		sendJSON(data, w)
 	})
 }
 
@@ -132,7 +134,7 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 	server := http.NewServeMux()
 	server.Handle("/static/index.js", onlyGet(indexScriptHandler()))
 	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache, cli)))
-	server.Handle(apiTagsRoute, onlyGet(apiTagsHandler(cache, cli)))
+	server.Handle(apiInfoRoute, onlyGet(apiInfoHandler(cache, cli)))
 	server.Handle("/", onlyRootPath(onlyGet(rootPageHandler(cache))))
 	return server, nil
 }

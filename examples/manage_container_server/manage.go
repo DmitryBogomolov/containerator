@@ -52,7 +52,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	}, nil
 }
 
-func getImageTags(cli interface{}, configPath string) ([]string, error) {
+func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, error) {
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return nil, err
@@ -61,5 +61,8 @@ func getImageTags(cli interface{}, configPath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return containerator.GetImagesTags(images), nil
+	return map[string]interface{}{
+		"modes": config.Modes,
+		"tags":  containerator.GetImagesTags(images),
+	}, nil
 }

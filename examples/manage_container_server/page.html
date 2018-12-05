@@ -21,6 +21,7 @@
                 <thead class="thead-light">
                     <tr>
                         <th>Name</th>
+                        <th>Mode</th>
                         <th>Tag</th>
                         <th>Update</th>
                         <th>Force</th>
@@ -31,11 +32,15 @@
                 {{ range .Projects }}
                     <tr data-id="{{ .Name }}">
                         <td>{{ .Name }}</td>
-                            <td>
-                                <select class="cmd-tags custom-select">
-                                    <option value="" selected>Latest</option>
-                                </select>
-                            </td>
+                        <td>
+                            <select class="cmd-modes custom-select">
+                            </select>
+                        </td>
+                        <td>
+                            <select class="cmd-tags custom-select">
+                                <option value="" selected>Latest</option>
+                            </select>
+                        </td>
                         <td>
                             <button class="cmd-update btn">Update</button>
                         </td>

@@ -13,6 +13,11 @@
         }
     }
 
+    function getMode(row) {
+        const sel = row.querySelector('.cmd-modes');
+        return sel.options[sel.options.selectedIndex].value;
+    }
+
     function getTag(row) {
         const sel = row.querySelector('.cmd-tags');
         return sel.options[sel.options.selectedIndex].value;
@@ -37,7 +42,11 @@
 
     function handleManageClick(button, options) {
         const row = findRow(button);
-        callManage(getRowId(row), Object.assign({ tag: getTag(row) }, options)).then(
+        const args = Object.assign({
+            mode: getMode(row),
+            tag: getTag(row)
+        }, options);
+        callManage(getRowId(row), args).then(
             function (data) {
                 const content = `${data.name} ${data.image} ${data.tag}`;
                 addBadge(button, content, false);
@@ -78,21 +87,25 @@
         Array.from(body.children).forEach(function (row) {
             row.querySelector('.cmd-update').addEventListener('click', handleUpdateClick);
             row.querySelector('.cmd-remove').addEventListener('click', handleRemoveClick);
-            const sel = row.querySelector('.cmd-tags');
-            loadTags(getRowId(row)).then(
-                function (tags) {
-                    addOptionItems(sel, tags);
+            const modelSel = row.querySelector('.cmd-modes');
+            const tagsSel = row.querySelector('.cmd-tags');
+            loadInfo(getRowId(row)).then(
+                function ({ modes, tags }) {
+                    addOptionItems(modelSel, modes || ['']);
+                    addOptionItems(tagsSel, tags);
                 },
                 function (err) {
-                    sel.classList.add('reduced-width');
-                    addBadge(sel, err.message, true);
+                    modelSel.classList.add('reduced-width');
+                    addBadge(modelSel, err.message, true);
+                    tagsSel.classList.add('reduced-width');
+                    addBadge(tagsSel, err.message, true);
                 }
             );
         });
     }
 
-    function loadTags(name) {
-        return fetch('/api/tags/' + name).then(function (response) {
+    function loadInfo(name) {
+        return fetch('/api/info/' + name).then(function (response) {
             return response.ok
                 ? response.json()
                 : response.text().then(function (text) {
@@ -101,8 +114,11 @@
         });
     }
 
-    function callManage(name, { tag, force, remove }) {
+    function callManage(name, { mode, tag, force, remove }) {
         const formData = new FormData();
+        if (mode) {
+            formData.append('mode', mode);
+        }
         if (tag) {
             formData.append('tag', tag);
         }
