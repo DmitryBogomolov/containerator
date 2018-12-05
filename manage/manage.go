@@ -78,7 +78,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := containerator.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*containerator.ContainerNotFoundError); ok {
+		if _, ok := err.(*containerator.ContainerNotFoundError); !ok {
 			return nil, err
 		}
 		currentContainer = nil
