@@ -18,6 +18,16 @@ func findIndex(item string, list []string) int {
 	return -1
 }
 
+// NotValidModeError indicates that specified mode is not found amoung config modes.
+type NotValidModeError struct {
+	Mode  string
+	Modes []string
+}
+
+func (e *NotValidModeError) Error() string {
+	return fmt.Sprintf("mode '%s' is not valid", e.Mode)
+}
+
 func selectMode(modeOption string, conf *Config) (string, int, error) {
 	index := findIndex(modeOption, conf.Modes)
 	if index >= 0 {
@@ -26,7 +36,7 @@ func selectMode(modeOption string, conf *Config) (string, int, error) {
 	if modeOption == "" && len(conf.Modes) == 0 {
 		return modeOption, 0, nil
 	}
-	return "", 0, fmt.Errorf("mode '%s' is not valid", modeOption)
+	return "", 0, &NotValidModeError{modeOption, conf.Modes}
 }
 
 func getContainerName(conf *Config, mode string) string {
@@ -44,9 +54,6 @@ func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*t
 	if imageTag != "" {
 		repoTag := imageRepo + ":" + imageTag
 		item, err := containerator.FindImageByRepoTag(cli, repoTag)
-		if _, ok := err.(*containerator.ImageNotFoundError); ok {
-			err = fmt.Errorf("no '%s' image (%v)", repoTag, err)
-		}
 		return item, err
 	}
 	list, err := containerator.FindImagesByRepo(cli, imageRepo)
@@ -54,7 +61,7 @@ func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*t
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("no '%s' images", imageRepo)
+		return nil, &containerator.ImageNotFoundError{Image: imageRepo}
 	}
 	return list[0], nil
 }

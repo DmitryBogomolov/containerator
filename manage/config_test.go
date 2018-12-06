@@ -9,21 +9,24 @@ import (
 )
 
 func TestReadConfig(t *testing.T) {
-	ioutil.WriteFile("test.yaml", []byte("image_repo: my-image\nmodes: ['a', 'b']\n"), os.ModePerm)
-	defer os.Remove("test.yaml")
+	t.Run("Read file", func(t *testing.T) {
+		ioutil.WriteFile("test.yaml", []byte("image_repo: my-image\nmodes: ['a', 'b']\n"), os.ModePerm)
+		defer os.Remove("test.yaml")
 
-	config, err := ReadConfig("test.yaml")
+		config, err := ReadConfig("test.yaml")
 
-	assert.Equal(t, nil, err, "error")
-	assert.Equal(t, Config{
-		ImageRepo: "my-image",
-		Modes:     []string{"a", "b"},
-	}, *config, "config")
-}
+		assert.NoError(t, err, "error")
+		assert.Equal(t, &Config{
+			ImageRepo: "my-image",
+			Modes:     []string{"a", "b"},
+		}, config, "config")
+	})
 
-func TestReadConfigNoFile(t *testing.T) {
-	config, err := ReadConfig("test.yaml")
+	t.Run("No file", func(t *testing.T) {
+		config, err := ReadConfig("test.yaml")
 
-	assert.EqualError(t, err, "open test.yaml: no such file or directory", "error")
-	assert.Equal(t, (*Config)(nil), config, "config")
+		assert.Error(t, err, "error")
+		assert.Equal(t, (err.(*os.PathError)).Path, "test.yaml", "error data")
+		assert.Equal(t, (*Config)(nil), config, "config")
+	})
 }
