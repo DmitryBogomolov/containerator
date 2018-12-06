@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator"
@@ -63,6 +65,13 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return nil, err
+	}
+	options.GetEnvReader = func(mode string) (io.Reader, error) {
+		reader, err := manage.GetEnvFileReader(filepath.Dir(configPath), mode)
+		if err != nil {
+			log.Printf("failed to read env for '%s' (%+v)", configPath, err)
+		}
+		return reader, nil
 	}
 	cont, err := manage.Manage(cli, config, options)
 	if err != nil {
