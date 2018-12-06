@@ -4,7 +4,6 @@ Package manage contains function to run, suspend, resume, remove containers.
 package manage
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
@@ -51,11 +50,23 @@ type Options struct {
 // DefaultConfigName defines default name of config file.
 const DefaultConfigName = "config.yaml"
 
-// ErrNoContainer error is returned on attempt to remove container when it is not found.
-var ErrNoContainer = errors.New("container is not found")
+// NoContainerError is returned on attempt to remove container when it is not found.
+type NoContainerError struct {
+	Container string
+}
 
-// ErrContainerAlreadyRunning error is returned on attempt to run container when similar container is already running.
-var ErrContainerAlreadyRunning = errors.New("container is already running")
+func (e *NoContainerError) Error() string {
+	return fmt.Sprintf("container '%s' is not found", e.Container)
+}
+
+// ContainerAlreadyRunningError is returned on attempt to run container when similar container is already running.
+type ContainerAlreadyRunningError struct {
+	Container *types.Container
+}
+
+func (e *ContainerAlreadyRunningError) Error() string {
+	return fmt.Sprintf("container '%s' is already running", containerator.GetContainerName(e.Container))
+}
 
 /*
 Manage runs containers with the last tag for the specified image repo.
@@ -86,7 +97,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 
 	if options.Remove {
 		if currentContainer == nil {
-			return nil, ErrNoContainer
+			return nil, &NoContainerError{containerName}
 		}
 		err = containerator.RemoveContainer(containerCli, currentContainer.ID)
 		if err != nil {
@@ -102,7 +113,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 	imageName := containerator.GetImageFullName(image)
 
 	if currentContainer != nil && currentContainer.ImageID == image.ID && !options.Force {
-		return nil, ErrContainerAlreadyRunning
+		return nil, &ContainerAlreadyRunningError{currentContainer}
 	}
 
 	runOptions := buildContainerOptions(conf, imageName, containerName, modeIndex)
