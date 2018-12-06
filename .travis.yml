@@ -13,5 +13,4 @@ install:
 
 script:
   - make build
-  - make lint
   - make test
