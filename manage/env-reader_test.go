@@ -10,9 +10,9 @@ import (
 )
 
 func TestGetEnvFileReader(t *testing.T) {
-	ioutil.WriteFile("env.list", []byte("c1"), os.ModePerm)
+	ioutil.WriteFile("env.list", []byte("common list"), os.ModePerm)
 	defer os.Remove("env.list")
-	ioutil.WriteFile("m1.list", []byte("c2"), os.ModePerm)
+	ioutil.WriteFile("m1.list", []byte("m1-mode list"), os.ModePerm)
 	defer os.Remove("m1.list")
 
 	read := func(reader io.Reader) string {
@@ -23,15 +23,32 @@ func TestGetEnvFileReader(t *testing.T) {
 		return string(data)
 	}
 
-	reader, err := GetEnvFileReader(".", "")
-	assert.Equal(t, nil, err, "error")
-	assert.Equal(t, "c1", read(reader), "data")
+	t.Run("Empty mode", func(t *testing.T) {
+		reader, err := GetEnvFileReader(".", "")
 
-	reader, err = GetEnvFileReader(".", "m1")
-	assert.Equal(t, nil, err, "error")
-	assert.Equal(t, "c2", read(reader), "data")
+		assert.NoError(t, err, "error")
+		assert.Equal(t, "common list", read(reader), "data")
+	})
 
-	reader, err = GetEnvFileReader(".", "m2")
-	assert.Equal(t, nil, err, "error")
-	assert.Equal(t, "c1", read(reader), "data")
+	t.Run("Valid mode", func(t *testing.T) {
+		reader, err := GetEnvFileReader(".", "m1")
+
+		assert.NoError(t, err, "error")
+		assert.Equal(t, "m1-mode list", read(reader), "data")
+	})
+
+	t.Run("Not valid mode", func(t *testing.T) {
+		reader, err := GetEnvFileReader(".", "m2")
+
+		assert.NoError(t, err, "error")
+		assert.Equal(t, "common list", read(reader), "data")
+	})
+
+	t.Run("No files", func(t *testing.T) {
+		reader, err := GetEnvFileReader(".test", "m1")
+
+		assert.Error(t, err, "error")
+		assert.Equal(t, err, ErrNoEnvFile, "error data")
+		assert.Equal(t, nil, reader, "data")
+	})
 }

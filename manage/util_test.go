@@ -16,25 +16,47 @@ func TestSelectMode(t *testing.T) {
 		Modes: []string{"m1", "m2", "m3"},
 	}
 
-	mode, i, err := selectMode("", conf)
-	assert.Equal(t, "", mode, "mode")
-	assert.Equal(t, 0, i, "index")
-	assert.EqualErrorf(t, err, "mode '' is not valid", "error")
+	t.Run("Unknonwn mode", func(t *testing.T) {
+		mode, i, err := selectMode("m4", conf)
 
-	mode, i, err = selectMode("m2", conf)
-	assert.Equal(t, "m2", mode, "mode")
-	assert.Equal(t, 1, i, "index")
-	assert.Equal(t, nil, err, "error")
+		assert.Error(t, err, "error")
+		assert.Equal(t, (err.(*NotValidModeError)).Mode, "m4", "error data")
+		assert.Equal(t, "", mode, "mode")
+		assert.Equal(t, 0, i, "index")
+	})
+
+	t.Run("Known mode", func(t *testing.T) {
+		mode, i, err := selectMode("m2", conf)
+
+		assert.NoError(t, nil, err, "error")
+		assert.Equal(t, "m2", mode, "mode")
+		assert.Equal(t, 1, i, "index")
+	})
+
+	t.Run("Empty mode", func(t *testing.T) {
+		mode, i, err := selectMode("", &Config{})
+
+		assert.NoError(t, nil, err, "error")
+		assert.Equal(t, "", mode, "mode")
+		assert.Equal(t, 0, i, "index")
+	})
 }
 
 func TestGetContainerName(t *testing.T) {
-	var name string
+	t.Run("Without mode", func(t *testing.T) {
+		name := getContainerName(&Config{ImageRepo: "test-name"}, "")
+		assert.Equal(t, "test-name", name)
+	})
 
-	name = getContainerName(&Config{ImageRepo: "cont"}, "")
-	assert.Equal(t, "cont", name, "without mode")
+	t.Run("With mode", func(t *testing.T) {
+		name := getContainerName(&Config{ImageRepo: "test-name"}, "dev")
+		assert.Equal(t, "test-name-dev", name)
+	})
 
-	name = getContainerName(&Config{ImageRepo: "cont"}, "m1")
-	assert.Equal(t, "cont-m1", name, "with mode")
+	t.Run("Prefer container name", func(t *testing.T) {
+		name := getContainerName(&Config{ImageRepo: "test-image", ContainerName: "test-container"}, "m1")
+		assert.Equal(t, "test-container-m1", name)
+	})
 }
 
 func TestFindImage(t *testing.T) {
@@ -58,51 +80,67 @@ func TestFindImage(t *testing.T) {
 	t.Run("With tag", func(t *testing.T) {
 		image, err := findImage(cli, "test-image", "2")
 
+		assert.NoError(t, err, "error")
 		assert.Equal(t, &testImages[1], image, "image")
-		assert.Equal(t, nil, err, "error")
+	})
 
-		image, err = findImage(cli, "test-image", "4")
+	t.Run("With tag - not found", func(t *testing.T) {
+		image, err := findImage(cli, "test-image", "4")
 
+		assert.Error(t, err, "error")
+		assert.Equal(t, (err.(*containerator.ImageNotFoundError)).Image, "test-image:4", "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
-		assert.EqualError(t, err, "no 'test-image:4' image (image 'test-image:4' is not found)", "error")
 	})
 
 	t.Run("Without tag", func(t *testing.T) {
 		image, err := findImage(cli, "test-image", "")
 
+		assert.NoError(t, err, "error")
 		assert.Equal(t, &testImages[0], image, "image")
-		assert.Equal(t, nil, err, "error")
+	})
 
-		image, err = findImage(cli, "test-image-other", "")
+	t.Run("Without tag - not found", func(t *testing.T) {
+		image, err := findImage(cli, "test-image-other", "")
 
+		assert.Error(t, err, "error")
+		assert.Equal(t, (err.(*containerator.ImageNotFoundError)).Image, "test-image-other", "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
-		assert.EqualError(t, err, "no 'test-image-other' images", "error")
 	})
 }
 
 func TestBuildContainerOptions(t *testing.T) {
-	assert.Equal(t, &containerator.RunContainerOptions{
-		Image:         "test-image",
-		Name:          "test-container",
-		RestartPolicy: containerator.RestartAlways,
-		Network:       "test-net",
-	}, buildContainerOptions(&Config{
-		Network: "test-net",
-	}, "test-image", "test-container", 1), "without ports")
+	t.Run("Simple", func(t *testing.T) {
+		expected := &containerator.RunContainerOptions{
+			Image:         "test-image",
+			Name:          "test-container",
+			RestartPolicy: containerator.RestartAlways,
+			Network:       "test-net",
+		}
+		actual := buildContainerOptions(&Config{
+			Network: "test-net",
+		}, "test-image", "test-container", 1)
 
-	assert.Equal(t, &containerator.RunContainerOptions{
-		Image:         "test-image",
-		Name:          "test-container",
-		RestartPolicy: containerator.RestartAlways,
-		Network:       "test-net",
-		Ports: []containerator.Mapping{
-			containerator.Mapping{Source: "210", Target: "1"},
-			containerator.Mapping{Source: "211", Target: "2"},
-		},
-	}, buildContainerOptions(&Config{
-		Network:    "test-net",
-		BasePort:   200,
-		PortOffset: 10,
-		Ports:      []float64{1, 2},
-	}, "test-image", "test-container", 1), "with ports")
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("With ports", func(t *testing.T) {
+		expected := &containerator.RunContainerOptions{
+			Image:         "test-image",
+			Name:          "test-container",
+			RestartPolicy: containerator.RestartAlways,
+			Network:       "test-net",
+			Ports: []containerator.Mapping{
+				containerator.Mapping{Source: "210", Target: "1"},
+				containerator.Mapping{Source: "211", Target: "2"},
+			},
+		}
+		actual := buildContainerOptions(&Config{
+			Network:    "test-net",
+			BasePort:   200,
+			PortOffset: 10,
+			Ports:      []float64{1, 2},
+		}, "test-image", "test-container", 1)
+
+		assert.Equal(t, expected, actual)
+	})
 }

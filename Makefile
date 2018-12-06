@@ -14,5 +14,11 @@ install:
 test:
 	go test -v -coverprofile=coverage.out ./...
 
+lint:
+	golint ./...
+
+build:
+	go build -v ./...
+
 view-cover:
 	go tool cover -html=coverage.out

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/DmitryBogomolov/containerator"
 	"github.com/DmitryBogomolov/containerator/manage"
@@ -42,7 +43,7 @@ func run() error {
 		Force:  forceOption,
 		Remove: removeOption,
 		GetEnvReader: func(mode string) (io.Reader, error) {
-			reader, err := manage.GetEnvFileReader(configPathOption, mode)
+			reader, err := manage.GetEnvFileReader(filepath.Dir(configPathOption), mode)
 			if err != nil {
 				log.Printf("Failed to load env file: %v\n", err)
 			}
@@ -52,7 +53,7 @@ func run() error {
 	container, err := manage.Manage(cli, config, options)
 
 	if options.Remove {
-		if err == manage.ErrNoContainer {
+		if _, ok := err.(*manage.NoContainerError); ok {
 			log.Println("There is no container")
 			return nil
 		}
@@ -63,7 +64,7 @@ func run() error {
 		return nil
 	}
 
-	if err == manage.ErrContainerAlreadyRunning {
+	if _, ok := err.(*manage.ContainerAlreadyRunningError); ok {
 		log.Println("Container is already running")
 		return nil
 	}
