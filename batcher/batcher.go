@@ -43,12 +43,16 @@ func (b *Batcher) unlock() {
 	}
 }
 
+func (b *Batcher) call() {
+	defer b.wg.Done()
+	b.action()
+}
+
 // Invoke calls batcher action.
 func (b *Batcher) Invoke() {
 	if b.lock() {
-		b.action()
-		b.wg.Done()
+		b.call()
 	}
+	defer b.unlock()
 	b.wg.Wait()
-	b.unlock()
 }
