@@ -72,7 +72,7 @@ func TestMultipleAsyncInvocations(t *testing.T) {
 		}()
 	}
 
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	for i := 0; i < COUNT; i++ {
 		gate1 <- 0
 	}
@@ -81,4 +81,40 @@ func TestMultipleAsyncInvocations(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, count)
+}
+
+func TestSequenceOfInvocations(t *testing.T) {
+	gate1 := make(chan int, COUNT)
+	gate2 := make(chan int, COUNT)
+	count := 0
+	b := NewBatcher(func() {
+		<-gate1
+		count++
+	})
+
+	for i := 0; i < COUNT; i++ {
+		go func() {
+			b.Invoke()
+			gate2 <- 0
+		}()
+	}
+	time.Sleep(100 * time.Millisecond)
+	gate1 <- 0
+	for i := 0; i < COUNT; i++ {
+		<-gate2
+	}
+
+	for i := 0; i < COUNT; i++ {
+		go func() {
+			b.Invoke()
+			gate2 <- 0
+		}()
+	}
+	time.Sleep(100 * time.Millisecond)
+	gate1 <- 0
+	for i := 0; i < COUNT; i++ {
+		<-gate2
+	}
+
+	assert.Equal(t, 2, count)
 }
