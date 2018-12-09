@@ -3,48 +3,66 @@ package containerator
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/golang/mock/gomock"
 )
 
 func TestGetImageFullName(t *testing.T) {
-	var name string
+	t.Run("No RepoTags", func(t *testing.T) {
+		name := GetImageFullName(&types.ImageSummary{RepoTags: []string{}})
+		assert.Equal(t, "", name)
+	})
 
-	name = GetImageFullName(&types.ImageSummary{RepoTags: []string{}})
-	assertEqual(t, name, "", "name")
-
-	name = GetImageFullName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
-	assertEqual(t, name, "a:1", "name")
+	t.Run("First RepoTag", func(t *testing.T) {
+		name := GetImageFullName(&types.ImageSummary{RepoTags: []string{"a:1", "b:2"}})
+		assert.Equal(t, "a:1", name)
+	})
 }
 
 func TestSplitImageNameTag(t *testing.T) {
-	var name, tag string
+	t.Run("With tag", func(t *testing.T) {
+		name, tag := SplitImageNameTag("a:1")
+		assert.Equal(t, "a", name)
+		assert.Equal(t, "1", tag)
+	})
 
-	name, tag = SplitImageNameTag("a:1")
-	assertEqual(t, name, "a", "name")
-	assertEqual(t, tag, "1", "tag")
+	t.Run("Without tag", func(t *testing.T) {
+		name, tag := SplitImageNameTag("b")
+		assert.Equal(t, "b", name)
+		assert.Equal(t, "latest", tag)
+	})
 
-	name, tag = SplitImageNameTag("b")
-	assertEqual(t, name, "b", "name")
-	assertEqual(t, tag, "latest", "tag")
+	t.Run("Panic on empty string", func(t *testing.T) {
+		assert.Panics(t, func() {
+			SplitImageNameTag("")
+		})
+	})
 }
 
 func TestJoinImageNameTag(t *testing.T) {
-	var name string
+	t.Run("With tag", func(t *testing.T) {
+		name := JoinImageNameTag("a", "1")
+		assert.Equal(t, "a:1", name)
+	})
 
-	name = JoinImageNameTag("a", "1")
-	assertEqual(t, name, "a:1", "name")
+	t.Run("Without tag", func(t *testing.T) {
+		name := JoinImageNameTag("b", "")
+		assert.Equal(t, "b:latest", name)
+	})
 
-	name = JoinImageNameTag("b", "")
-	assertEqual(t, name, "b:latest", "name")
+	t.Run("Panic on empty string", func(t *testing.T) {
+		assert.Panics(t, func() {
+			JoinImageNameTag("", "")
+		})
+	})
 }
 
 func TestGetImageShortID(t *testing.T) {
-	var id string
-
-	id = GetImageShortID(&types.ImageSummary{ID: "sha256:01234567890123456789"})
-	assertEqual(t, id, "012345678901", "id")
+	id := GetImageShortID(&types.ImageSummary{ID: "sha256:01234567890123456789"})
+	assert.Equal(t, "012345678901", id)
 }
 
 func TestFindImage(t *testing.T) {
@@ -74,69 +92,65 @@ func TestFindImage(t *testing.T) {
 	cli.EXPECT().ImageList(gomock.Any(), gomock.Any()).Return(testImages, nil).AnyTimes()
 
 	t.Run("ByID", func(t *testing.T) {
-		var image *types.ImageSummary
-		var err error
+		image, err := FindImageByID(cli, "sha256:00112233445566778899")
+		assert.NoError(t, err)
+		assert.Equal(t, &testImages[0], image)
+	})
 
-		image, err = FindImageByID(cli, "sha256:00112233445566778899")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, image, &testImages[0], "image")
-
-		image, err = FindImageByID(cli, "sha256:11223344556677889900")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, image, &testImages[1], "image")
-
-		image, err = FindImageByID(cli, "unknown")
+	t.Run("ByID / not found", func(t *testing.T) {
+		image, err := FindImageByID(cli, "unknown")
+		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
-		assertEqual(t, image, nil, "image")
+		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.Nil(t, image)
 	})
 
 	t.Run("ByShortID", func(t *testing.T) {
-		var image *types.ImageSummary
-		var err error
-
-		image, err = FindImageByShortID(cli, "0011")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, image, &testImages[0], "image")
-
-		image, err = FindImageByShortID(cli, "unknown")
-		imageErr, ok := err.(*ImageNotFoundError)
-		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
-		assertEqual(t, image, nil, "image")
+		image, err := FindImageByShortID(cli, "0011")
+		assert.NoError(t, err)
+		assert.Equal(t, &testImages[0], image)
 	})
 
-	t.Run("ByRepoTag", func(t *testing.T) {
-		var image *types.ImageSummary
-		var err error
-
-		image, err = FindImageByRepoTag(cli, "test")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, image, &testImages[0], "image")
-
-		image, err = FindImageByRepoTag(cli, "test:4")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, image, &testImages[3], "image")
-
-		image, err = FindImageByRepoTag(cli, "unknown")
+	t.Run("ByShortID / not found", func(t *testing.T) {
+		image, err := FindImageByShortID(cli, "unknown")
+		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assertEqual(t, ok && imageErr.Image == "unknown", true, "error")
-		assertEqual(t, image, nil, "image")
+		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.Nil(t, image)
+	})
+
+	t.Run("ByRepoTag / no tag", func(t *testing.T) {
+		image, err := FindImageByRepoTag(cli, "test")
+		assert.NoError(t, err)
+		assert.Equal(t, &testImages[0], image)
+	})
+
+	t.Run("ByRepoTag / tag", func(t *testing.T) {
+		image, err := FindImageByRepoTag(cli, "test:4")
+		assert.NoError(t, err)
+		assert.Equal(t, &testImages[3], image)
+	})
+
+	t.Run("ByRepoTag / not found", func(t *testing.T) {
+		image, err := FindImageByRepoTag(cli, "unknown")
+		assert.Error(t, err)
+		imageErr, ok := err.(*ImageNotFoundError)
+		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.Nil(t, image)
 	})
 
 	t.Run("ByRepo", func(t *testing.T) {
-		var images []*types.ImageSummary
-		var err error
+		images, err := FindImagesByRepo(cli, "test")
+		assert.NoError(t, err)
+		expected := []*types.ImageSummary{&testImages[0], &testImages[2], &testImages[3]}
+		assert.Equal(t, expected, images)
+	})
 
-		images, err = FindImagesByRepo(cli, "test")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, len(images), 3, "images count")
-		assertEqual(t, images[0], &testImages[0], "image 1")
-		assertEqual(t, images[1], &testImages[2], "image 2")
-		assertEqual(t, images[2], &testImages[3], "image 3")
-
-		images, err = FindImagesByRepo(cli, "unknown")
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, len(images), 0, "images count")
+	t.Run("ByRepo / not found", func(t *testing.T) {
+		images, err := FindImagesByRepo(cli, "unknown")
+		assert.NoError(t, err)
+		var expected []*types.ImageSummary
+		assert.Equal(t, expected, images)
 	})
 }
 
@@ -147,8 +161,5 @@ func TestGetImagesTags(t *testing.T) {
 		&types.ImageSummary{RepoTags: []string{"a"}},
 	})
 
-	assertEqual(t, len(tags), 3, "count")
-	assertEqual(t, tags[0], "1", "item 1")
-	assertEqual(t, tags[1], "2", "item 1")
-	assertEqual(t, tags[2], "latest", "item 1")
+	assert.Equal(t, []string{"1", "2", "latest"}, tags)
 }
