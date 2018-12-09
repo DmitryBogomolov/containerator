@@ -10,7 +10,7 @@ import (
 Batcher replaces several long running function invocations with a single one.
 
 	func DoSomeTask() {
-		... // time.Sleep(5*time.Second)
+		... // time.Sleep(5 * time.Second)
 	}
 
 	for i := 0; i < COUNT; i++ {
@@ -37,8 +37,8 @@ Batcher does it.
 
 */
 type Batcher struct {
-	wg     sync.WaitGroup
-	mux    sync.Mutex
+	wg     *sync.WaitGroup
+	mux    *sync.Mutex
 	locker int
 	action func()
 }
@@ -48,7 +48,11 @@ func NewBatcher(action func()) *Batcher {
 	if action == nil {
 		panic("nil action")
 	}
-	return &Batcher{action: action}
+	return &Batcher{
+		wg:     &sync.WaitGroup{},
+		mux:    &sync.Mutex{},
+		action: action,
+	}
 }
 
 func (b *Batcher) lock() bool {

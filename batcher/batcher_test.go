@@ -2,32 +2,83 @@ package batcher
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSingleInvocation(t *testing.T) {
-	called := false
+const (
+	COUNT = 5
+)
+
+func invoke(b *Batcher, ch chan int) {
+	b.Invoke()
+	ch <- 0
+}
+
+func TestSingleSyncInvocation(t *testing.T) {
+	count := 0
 	b := NewBatcher(func() {
-		called = true
+		count++
 	})
 
 	b.Invoke()
 
-	assert.Equal(t, true, called)
+	assert.Equal(t, 1, count)
 }
 
-func TestTwoInvocations(t *testing.T) {
+func TestMultipleSyncInvocations(t *testing.T) {
 	count := 0
-	move := make(chan int)
 	b := NewBatcher(func() {
-		<-move
 		count++
 	})
 
-	go b.Invoke()
-	go b.Invoke()
-	move <- 0
-	assert.Equal(t, 1, count)
+	for i := 0; i < COUNT; i++ {
+		b.Invoke()
+	}
 
+	assert.Equal(t, COUNT, count)
+}
+
+func TestSingleAsyncInvocation(t *testing.T) {
+	count := 0
+	b := NewBatcher(func() {
+		count++
+	})
+	gate := make(chan int, 1)
+
+	go func() {
+		b.Invoke()
+		gate <- 0
+	}()
+	<-gate
+
+	assert.Equal(t, 1, count)
+}
+
+func TestMultipleAsyncInvocations(t *testing.T) {
+	gate1 := make(chan int, COUNT)
+	gate2 := make(chan int, COUNT)
+	count := 0
+	b := NewBatcher(func() {
+		<-gate1
+		count++
+	})
+
+	for i := 0; i < COUNT; i++ {
+		go func() {
+			b.Invoke()
+			gate2 <- 0
+		}()
+	}
+
+	time.Sleep(300 * time.Millisecond)
+	for i := 0; i < COUNT; i++ {
+		gate1 <- 0
+	}
+	for i := 0; i < COUNT; i++ {
+		<-gate2
+	}
+
+	assert.Equal(t, 1, count)
 }
