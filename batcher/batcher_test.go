@@ -118,3 +118,47 @@ func TestSequenceOfInvocations(t *testing.T) {
 
 	assert.Equal(t, 2, count)
 }
+
+func TestPanicInInvocation(t *testing.T) {
+	testErr := struct{ tag string }{tag: "Test"}
+	gate := make(chan interface{})
+	b := NewBatcher(func() {
+		panic(testErr)
+	})
+
+	go func() {
+		err := b.Invoke()
+		gate <- err
+	}()
+	err := <-gate
+
+	assert.True(t, err == testErr)
+}
+
+func TestPanicInSeveralIncocations(t *testing.T) {
+	testErr := struct{ tag string }{tag: "Test"}
+	gate1 := make(chan int, COUNT)
+	gate2 := make(chan interface{}, COUNT)
+	b := NewBatcher(func() {
+		panic(testErr)
+	})
+
+	for i := 0; i < COUNT; i++ {
+		go func() {
+			err := b.Invoke()
+			gate2 <- err
+		}()
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	for i := 0; i < COUNT; i++ {
+		gate1 <- 0
+	}
+	var errs []interface{}
+	for i := 0; i < COUNT; i++ {
+		err := <-gate2
+		errs = append(errs, err)
+	}
+
+	assert.Equal(t, []interface{}{testErr, testErr, testErr, testErr, testErr}, errs)
+}
