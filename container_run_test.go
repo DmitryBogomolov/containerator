@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
@@ -43,8 +44,8 @@ func TestRunContainer(t *testing.T) {
 			Name:  "container-1",
 		})
 
-		assertEqual(t, err, nil, "error")
-		assertEqual(t, cont.ID, expectedContainer.ID, "container")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedContainer.ID, cont.ID)
 	})
 
 	t.Run("RemoveNonStarted", func(t *testing.T) {
@@ -69,7 +70,7 @@ func TestRunContainer(t *testing.T) {
 			Name:  "container-1",
 		})
 
-		assertEqual(t, err, expectedErr, "error")
+		assert.Equal(t, expectedErr, err)
 	})
 
 	t.Run("VolumesAndPorts", func(t *testing.T) {
@@ -278,7 +279,7 @@ func TestRunContainerOptionsJSONMarshal(t *testing.T) {
 	bytes, err := json.MarshalIndent(options, "", "  ")
 	data := string(bytes)
 
-	assertEqual(t, err, nil, "error")
+	assert.NoError(t, err)
 	expected := strings.Join([]string{
 		`{`,
 		`  "image": "image:1",`,
@@ -299,7 +300,7 @@ func TestRunContainerOptionsJSONMarshal(t *testing.T) {
 		`  "network": "network-1"`,
 		`}`,
 	}, "\n")
-	assertEqual(t, data, expected, "data")
+	assert.Equal(t, expected, data)
 }
 
 func TestRunContainerOptionsJSONUnmarshal(t *testing.T) {
@@ -317,11 +318,12 @@ func TestRunContainerOptionsJSONUnmarshal(t *testing.T) {
 
 	err := json.Unmarshal([]byte(data), &options)
 
-	assertEqual(t, err, nil, "error")
-	assertEqual(t, options.Image, "image:1", "options-Image")
-	assertEqual(t, options.Name, "container-1", "options-Name")
-	assertEqual(t, options.Env[0], Mapping{"A", "1"}, "options-Env-1")
-	assertEqual(t, options.Env[1], Mapping{"B", "2"}, "options-Env-2")
+	assert.NoError(t, err)
+	assert.Equal(t, RunContainerOptions{
+		Image: "image:1",
+		Name:  "container-1",
+		Env:   []Mapping{Mapping{"A", "1"}, Mapping{"B", "2"}},
+	}, options)
 }
 
 func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
@@ -341,7 +343,7 @@ func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
 	bytes, err := yaml.Marshal(options)
 	data := string(bytes)
 
-	assertEqual(t, err, nil, "error")
+	assert.NoError(t, err)
 	expected := strings.Join([]string{
 		"image: image:1",
 		"name: container-1",
@@ -353,7 +355,7 @@ func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
 		"network: network-1",
 		"",
 	}, "\n")
-	assertEqual(t, data, expected, "data")
+	assert.Equal(t, expected, data)
 }
 
 func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
@@ -368,11 +370,12 @@ func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
 
 	err := yaml.Unmarshal([]byte(data), &options)
 
-	assertEqual(t, err, nil, "error")
-	assertEqual(t, options.Image, "image:1", "options-Image")
-	assertEqual(t, options.Name, "container-1", "options-Name")
-	assertEqual(t, options.Env[0], Mapping{"A", "1"}, "options-Env-1")
-	assertEqual(t, options.Env[1], Mapping{"B", "2"}, "options-Env-2")
+	assert.NoError(t, err)
+	assert.Equal(t, RunContainerOptions{
+		Image: "image:1",
+		Name:  "container-1",
+		Env:   []Mapping{Mapping{"A", "1"}, Mapping{"B", "2"}},
+	}, options)
 }
 
 func TestNewMappingListFromMap(t *testing.T) {
@@ -383,5 +386,5 @@ func TestNewMappingListFromMap(t *testing.T) {
 		"d": "4",
 	})
 
-	assertEqual(t, len(ret), 4, "length")
+	assert.Equal(t, 4, len(ret))
 }
