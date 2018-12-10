@@ -101,7 +101,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByID(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image == "unknown")
 		assert.Nil(t, image)
 	})
 
@@ -115,7 +115,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByShortID(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image == "unknown")
 		assert.Nil(t, image)
 	})
 
@@ -135,7 +135,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByRepoTag(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.Equal(t, true, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image == "unknown")
 		assert.Nil(t, image)
 	})
 
