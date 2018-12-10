@@ -40,6 +40,7 @@ type Batcher struct {
 	wg     *sync.WaitGroup
 	mux    *sync.Mutex
 	locker int
+	err    interface{}
 	action func()
 }
 
@@ -81,14 +82,20 @@ func (b *Batcher) unlock() {
 
 func (b *Batcher) call() {
 	defer b.wg.Done()
+	defer b.capturePanic()
 	b.action()
 }
 
+func (b *Batcher) capturePanic() {
+	b.err = recover()
+}
+
 // Invoke executes batched action.
-func (b *Batcher) Invoke() {
+func (b *Batcher) Invoke() interface{} {
 	if b.lock() {
 		b.call()
 	}
 	defer b.unlock()
 	b.wg.Wait()
+	return b.err
 }
