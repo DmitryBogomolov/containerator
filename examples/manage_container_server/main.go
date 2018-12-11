@@ -1,0 +1,81 @@
+/*
+Program manage_container_server is an example of http server
+that manages several container projects.
+
+TODO:
+ * refresh projects on time interval
+ * refresh projects on 'not-found' error
+ * add command status popups
+*/
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+const defaultPort = 4001
+
+type errorChan chan error
+
+func runServer(port int, handler http.Handler, ch errorChan) {
+	ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+}
+
+func validateWorkspace(workspace string) error {
+	cwd, _ := os.Getwd()
+	stat, err := os.Stat(workspace)
+	if err == nil && !stat.IsDir() {
+		err = fmt.Errorf("'%s' is not a directory", workspace)
+	}
+	if err != nil {
+		return err
+	}
+	abspath, _ := filepath.Abs(workspace)
+	p, err := filepath.Rel(cwd, abspath)
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(p, "..") {
+		return fmt.Errorf("'%s' is outside working directory", workspace)
+	}
+	return nil
+}
+
+func run() error {
+	var port int
+	var workspace string
+	flag.IntVar(&port, "port", defaultPort, "port")
+	flag.StringVar(&workspace, "workspace", ".sandbox", "path to workspace")
+	flag.Parse()
+
+	ch := make(errorChan)
+
+	err := validateWorkspace(workspace)
+	if err != nil {
+		return err
+	}
+
+	handler, err := setupServer(workspace)
+	if err != nil {
+		return err
+	}
+
+	go runServer(port, handler, ch)
+	log.Printf("Listening %d...", port)
+
+	return <-ch
+}
+
+func main() {
+	err := run()
+	if err != nil {
+		log.Fatalf("%+v\n", err)
+		os.Exit(1)
+	}
+}
