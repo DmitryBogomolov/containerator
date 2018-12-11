@@ -6,51 +6,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"strings"
+
+	"github.com/gorilla/mux"
 
 	"github.com/docker/docker/client"
 )
-
-const (
-	apiManageRoute = "/api/manage/"
-	apiInfoRoute   = "/api/info/"
-)
-
-func restrictMethod(method string, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != method {
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			return
-		}
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func onlyGet(handler http.Handler) http.Handler {
-	return restrictMethod(http.MethodGet, handler)
-}
-
-func onlyPost(handler http.Handler) http.Handler {
-	return restrictMethod(http.MethodPost, handler)
-}
-
-func restrictPath(predicate func(p string) bool, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !predicate(r.URL.Path) {
-			http.NotFound(w, r)
-			return
-		}
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func isRootPath(path string) bool {
-	return path == "/"
-}
-
-func onlyRootPath(handler http.Handler) http.Handler {
-	return restrictPath(isRootPath, handler)
-}
 
 func indexScriptHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,8 +18,7 @@ func indexScriptHandler() http.Handler {
 	})
 }
 
-func getProject(r *http.Request, prefix string, cache *projectsCache) (*projectItem, error) {
-	name := strings.TrimPrefix(r.URL.Path, prefix)
+func getProject(cache *projectsCache, name string) (*projectItem, error) {
 	item := cache.get(name)
 	if item == nil {
 		return nil, fmt.Errorf("project '%s' is not found", name)
@@ -80,7 +39,8 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 
 func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		item, err := getProject(r, apiManageRoute, cache)
+		vars := mux.Vars(r)
+		item, err := getProject(cache, vars["name"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -96,7 +56,8 @@ func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 
 func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		item, err := getProject(r, apiInfoRoute, cache)
+		vars := mux.Vars(r)
+		item, err := getProject(cache, vars["name"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -128,13 +89,19 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
-	server := http.NewServeMux()
-	server.Handle("/static/index.js", onlyGet(indexScriptHandler()))
-	server.Handle(apiManageRoute, onlyPost(apiManageHandler(cache, cli)))
-	server.Handle(apiInfoRoute, onlyGet(apiInfoHandler(cache, cli)))
-	server.Handle("/", onlyRootPath(onlyGet(rootPageHandler(cache))))
+	server := mux.NewRouter()
+
+	server.NewRoute().
+		Path("/static/index.js").Methods(http.MethodGet).Handler(indexScriptHandler())
+	server.NewRoute().
+		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(apiManageHandler(cache, cli))
+	server.NewRoute().
+		Path("/api/info/{name}").Methods(http.MethodGet).Handler(apiInfoHandler(cache, cli))
+	server.NewRoute().
+		Path("/").Methods(http.MethodGet).Handler(rootPageHandler(cache))
+
 	return server, nil
 }
