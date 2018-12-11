@@ -3,22 +3,23 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"log"
-	"os"
 	"path/filepath"
-	"sync/atomic"
 	"time"
+
+	"github.com/DmitryBogomolov/containerator/batcher"
 )
 
 type projectItem struct {
 	Name       string
-	ConfigPath string
+	configPath string
 }
 
 type projectsCache struct {
-	locker    int32
-	Workspace string
+	workspace string
 	Projects  []projectItem
+	batcher   *batcher.Batcher
 }
 
 func collectProjects(pattern string) []string {
@@ -30,38 +31,40 @@ func collectProjects(pattern string) []string {
 		log.Printf("%+v", err)
 		time.Sleep(3 * time.Second)
 	}
-	log.Fatalf("failed to refresh projects")
+	log.Panicln("failed to refresh projects")
 	return nil
 }
 
-func (obj *projectsCache) refresh() {
-	if !atomic.CompareAndSwapInt32(&obj.locker, 0, 1) {
-		return
-	}
-	defer atomic.StoreInt32(&obj.locker, 0)
-	matches := collectProjects(filepath.Join(obj.Workspace, "*", "*.yaml"))
+func (obj *projectsCache) refreshCore() {
+	matches := collectProjects(filepath.Join(obj.workspace, "*", "*.yaml"))
 	items := make([]projectItem, len(matches))
 	for i, m := range matches {
 		items[i] = projectItem{
 			Name:       filepath.Base(filepath.Dir(m)),
-			ConfigPath: m,
+			configPath: m,
 		}
 	}
 	obj.Projects = items
 }
 
-func (obj *projectsCache) get(name string) *projectItem {
+func (obj *projectsCache) refresh() {
+	obj.batcher.Invoke()
+}
+
+func (obj *projectsCache) get(name string) (projectItem, error) {
 	for i, item := range obj.Projects {
 		if item.Name == name {
-			return &obj.Projects[i]
+			return obj.Projects[i], nil
 		}
 	}
-	return nil
+	var notFound projectItem
+	return notFound, fmt.Errorf("project '%s' is not found", name)
 }
 
 func newProjectsCache(workspace string) *projectsCache {
-	workDir, _ := os.Getwd()
-	cache := &projectsCache{Workspace: workDir}
+	cache := &projectsCache{}
+	cache.workspace = workspace
+	cache.batcher = batcher.NewBatcher(cache.refreshCore)
 	cache.refresh()
 	return cache
 }
@@ -71,11 +74,4 @@ func getProjectID(configPath string) string {
 	h.Write([]byte(configPath))
 	hash := hex.EncodeToString(h.Sum(nil))
 	return hash[:8]
-}
-
-func newProjectItem(name string, configPath string) projectItem {
-	return projectItem{
-		Name:       name,
-		ConfigPath: configPath,
-	}
 }

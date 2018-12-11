@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -16,14 +15,6 @@ func indexScriptHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/index.js")
 	})
-}
-
-func getProject(cache *projectsCache, name string) (*projectItem, error) {
-	item := cache.get(name)
-	if item == nil {
-		return nil, fmt.Errorf("project '%s' is not found", name)
-	}
-	return item, nil
 }
 
 func sendJSON(value interface{}, w http.ResponseWriter) {
@@ -40,12 +31,12 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		item, err := getProject(cache, vars["name"])
+		item, err := cache.get(vars["name"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		ret, err := invokeManage(cli, item.ConfigPath, r)
+		ret, err := invokeManage(cli, item.configPath, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -57,12 +48,12 @@ func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		item, err := getProject(cache, vars["name"])
+		item, err := cache.get(vars["name"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		data, err := getImageInfo(cli, item.ConfigPath)
+		data, err := getImageInfo(cli, item.configPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -82,10 +73,7 @@ func rootPageHandler(cache *projectsCache) http.Handler {
 }
 
 func setupServer(pathToWorkspace string) (http.Handler, error) {
-	cache := &projectsCache{
-		Workspace: pathToWorkspace,
-	}
-	cache.refresh()
+	cache := newProjectsCache(pathToWorkspace)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
