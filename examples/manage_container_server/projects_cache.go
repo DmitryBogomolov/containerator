@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -28,10 +27,10 @@ func collectProjects(pattern string) []string {
 		if err == nil {
 			return matches
 		}
-		log.Printf("%+v", err)
+		logger.Printf("%+v", err)
 		time.Sleep(3 * time.Second)
 	}
-	log.Panicln("failed to refresh projects")
+	logger.Panicln("failed to refresh projects")
 	return nil
 }
 

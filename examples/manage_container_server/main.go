@@ -12,7 +12,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -67,7 +66,7 @@ func run() error {
 	}
 
 	go runServer(port, handler, ch)
-	log.Printf("Listening %d...", port)
+	logger.Printf("Listening %d...", port)
 
 	return <-ch
 }
@@ -75,7 +74,7 @@ func run() error {
 func main() {
 	err := run()
 	if err != nil {
-		log.Fatalf("%+v\n", err)
+		logger.Fatalf("%+v\n", err)
 		os.Exit(1)
 	}
 }

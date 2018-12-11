@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"html/template"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -67,7 +66,7 @@ func rootPageHandler(cache *projectsCache) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := tmpl.Execute(w, cache)
 		if err != nil {
-			log.Printf("template error: %+v\n", err)
+			logger.Printf("template error: %+v\n", err)
 		}
 	})
 }

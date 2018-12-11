@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -69,7 +68,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	options.GetEnvReader = func(mode string) (io.Reader, error) {
 		reader, err := manage.GetEnvFileReader(filepath.Dir(configPath), mode)
 		if err != nil {
-			log.Printf("failed to read env for '%s' (%+v)", configPath, err)
+			logger.Printf("failed to read env for '%s' (%+v)", configPath, err)
 		}
 		return reader, nil
 	}
