@@ -5,9 +5,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/DmitryBogomolov/containerator/batcher"
+)
+
+const (
+	refreshInterval = 10 * time.Second
 )
 
 type projectItem struct {
@@ -48,6 +53,7 @@ func (obj *projectsCache) refreshCore() {
 
 func (obj *projectsCache) refresh() {
 	obj.batcher.Invoke()
+	logger.Printf("Refresh\n  %s\n", strings.Join(obj.getProjectNames(), ", "))
 }
 
 func (obj *projectsCache) get(name string) (projectItem, error) {
@@ -60,11 +66,31 @@ func (obj *projectsCache) get(name string) (projectItem, error) {
 	return notFound, fmt.Errorf("project '%s' is not found", name)
 }
 
+func (obj *projectsCache) getProjectNames() []string {
+	names := make([]string, len(obj.Projects))
+	for i, p := range obj.Projects {
+		names[i] = p.Name
+	}
+	return names
+}
+
+func (obj *projectsCache) refreshByInterval(ch <-chan time.Time) {
+	for range ch {
+		obj.refresh()
+	}
+}
+
+func (obj *projectsCache) beginIntervalRefresh(d time.Duration) {
+	ticker := time.NewTicker(d)
+	go obj.refreshByInterval(ticker.C)
+}
+
 func newProjectsCache(workspace string) *projectsCache {
 	cache := &projectsCache{}
 	cache.workspace = workspace
 	cache.batcher = batcher.NewBatcher(cache.refreshCore)
 	cache.refresh()
+	cache.beginIntervalRefresh(refreshInterval)
 	return cache
 }
 
