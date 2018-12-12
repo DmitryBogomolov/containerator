@@ -3,7 +3,6 @@ Program manage_container_server is an example of http server
 that manages several container projects.
 
 TODO:
- * refresh projects on 'not-found' error
  * add command status popups
 */
 package main

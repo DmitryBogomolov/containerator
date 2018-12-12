@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -37,6 +38,9 @@ func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 		}
 		ret, err := invokeManage(cli, item.configPath, r)
 		if err != nil {
+			if os.IsNotExist(err) {
+				cache.refresh()
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -54,6 +58,9 @@ func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 		}
 		data, err := getImageInfo(cli, item.configPath)
 		if err != nil {
+			if os.IsNotExist(err) {
+				cache.refresh()
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
