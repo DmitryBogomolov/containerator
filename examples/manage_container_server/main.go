@@ -22,8 +22,13 @@ const defaultPort = 4001
 
 type errorChan chan error
 
-func runServer(port int, handler http.Handler, ch errorChan) {
-	ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+func runServer(port int, handler http.Handler) error {
+	ch := make(chan error)
+	go func() {
+		ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+	}()
+	logger.Printf("Listening %d...\n", port)
+	return <-ch
 }
 
 func validateWorkspace(workspace string) error {
@@ -53,22 +58,18 @@ func run() error {
 	flag.StringVar(&workspace, "workspace", ".sandbox", "path to workspace")
 	flag.Parse()
 
-	ch := make(errorChan)
-
 	err := validateWorkspace(workspace)
 	if err != nil {
 		return err
 	}
+	logger.Printf("Workspace: %s\n", workspace)
 
 	handler, err := setupServer(workspace)
 	if err != nil {
 		return err
 	}
 
-	go runServer(port, handler, ch)
-	logger.Printf("Listening %d...", port)
-
-	return <-ch
+	return runServer(port, handler)
 }
 
 func main() {

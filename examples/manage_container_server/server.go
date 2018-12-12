@@ -71,6 +71,13 @@ func rootPageHandler(cache *projectsCache) http.Handler {
 	})
 }
 
+func wrapLogger(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Printf("%-5s %s\n", r.Method, r.RequestURI)
+		h.ServeHTTP(w, r)
+	})
+}
+
 func setupServer(pathToWorkspace string) (http.Handler, error) {
 	cache := newProjectsCache(pathToWorkspace)
 
@@ -90,5 +97,5 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 	server.NewRoute().
 		Path("/").Methods(http.MethodGet).Handler(rootPageHandler(cache))
 
-	return server, nil
+	return wrapLogger(server), nil
 }
