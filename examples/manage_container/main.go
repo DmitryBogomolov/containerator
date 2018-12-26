@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"io"
 	"log"
@@ -16,6 +17,10 @@ import (
 func run() error {
 	var configPathOption string
 	flag.StringVar(&configPathOption, "config", manage.DefaultConfigName, "configuration file")
+	var imageRepo string
+	flag.StringVar(&imageRepo, "image", "", "image repo")
+	var containerName string
+	flag.StringVar(&containerName, "container", "", "container name")
 	var modeOption string
 	flag.StringVar(&modeOption, "mode", "", "mode")
 	var tagOption string
@@ -34,7 +39,20 @@ func run() error {
 
 	config, err := manage.ReadConfig(configPathOption)
 	if err != nil {
-		return err
+		if !os.IsNotExist(err) {
+			return err
+		}
+		config = &manage.Config{}
+	}
+	if imageRepo != "" {
+		config.ImageRepo = imageRepo
+	}
+	if containerName != "" {
+		config.ContainerName = containerName
+	}
+
+	if config.ImageRepo == "" {
+		return errors.New("image repo is not defined")
 	}
 
 	options := &manage.Options{
