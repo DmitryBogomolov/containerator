@@ -14,3 +14,4 @@ Contains function to run, suspend, resume, remove containers.
 - [find_container](./examples/find_container/README.md)
 - [run_container](./examples/run_container/README.md)
 - [manage_container](./examples/manage_container/README.md)
+- [manage_container_server](./examples/manage_container_server/README.md)
