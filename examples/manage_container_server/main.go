@@ -74,6 +74,5 @@ func main() {
 	err := run()
 	if err != nil {
 		logger.Fatalf("%+v\n", err)
-		os.Exit(1)
 	}
 }
