@@ -1,3 +1,4 @@
 manage_container_server
 config.yaml
 .sandbox
+*.log
