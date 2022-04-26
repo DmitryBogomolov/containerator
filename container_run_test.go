@@ -29,7 +29,7 @@ func TestRunContainer(t *testing.T) {
 				gomock.Any(),
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -55,7 +55,7 @@ func TestRunContainer(t *testing.T) {
 				gomock.Any(),
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		expectedErr := errors.New("error-on-start")
 		cli.EXPECT().
@@ -104,7 +104,7 @@ func TestRunContainer(t *testing.T) {
 						},
 					},
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -146,7 +146,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -183,7 +183,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -216,7 +216,7 @@ func TestRunContainer(t *testing.T) {
 						Name: "on-failure",
 					},
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -243,7 +243,7 @@ func TestRunContainer(t *testing.T) {
 				&container.HostConfig{
 					NetworkMode: container.NetworkMode("test-net"),
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).

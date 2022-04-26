@@ -32,7 +32,7 @@ func cliContainerList(cli client.ContainerAPIClient) ([]types.Container, error) 
 func cliContainerCreate(cli client.ContainerAPIClient, config *container.Config, hostConfig *container.HostConfig, containerName string) (container.ContainerCreateCreatedBody, error) {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerCreate(ctx, config, hostConfig, nil, containerName)
+	return cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
 }
 
 func cliContainerStart(cli client.ContainerAPIClient, container string) error {
