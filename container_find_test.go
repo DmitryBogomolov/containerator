@@ -32,27 +32,27 @@ func TestFindContainer(t *testing.T) {
 	defer ctrl.Finish()
 
 	testContainers := []types.Container{
-		types.Container{
+		{
 			ID:      "00112233445566778899",
 			Names:   []string{"/tester-1", "/tester-1a"},
 			ImageID: "i1",
 		},
-		types.Container{
+		{
 			ID:      "11223344556677889900",
 			Names:   []string{},
 			ImageID: "i2",
 		},
-		types.Container{
+		{
 			ID:      "22334455667788990011",
 			Names:   []string{"/tester-3"},
 			ImageID: "i2",
 		},
-		types.Container{
+		{
 			ID:      "33445566778899001122",
 			Names:   []string{"/tester-4", "/tester-4a", "/tester-4b"},
 			ImageID: "i1",
 		},
-		types.Container{
+		{
 			ID:      "44556677889900112233",
 			Names:   []string{},
 			ImageID: "i2",
