@@ -1,3 +1,6 @@
+install-lint:
+	go install golang.org/x/lint/golint@latest
+
 install-mockgen:
 	go install github.com/golang/mock/mockgen@latest
 
