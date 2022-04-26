@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/DmitryBogomolov/containerator.svg?branch=master)](https://travis-ci.org/DmitryBogomolov/containerator)
+[![CI](https://github.com/DmitryBogomolov/containerator/actions/workflows/ci.yml/badge.svg)](https://github.com/DmitryBogomolov/containerator/actions/workflows/ci.yml)
 
 # containerator
 
