@@ -70,19 +70,19 @@ func TestFindImage(t *testing.T) {
 	defer ctrl.Finish()
 
 	testImages := []types.ImageSummary{
-		types.ImageSummary{
+		{
 			ID:       "sha256:00112233445566778899",
 			RepoTags: []string{"test:latest", "test:1"},
 		},
-		types.ImageSummary{
+		{
 			ID:       "sha256:11223344556677889900",
 			RepoTags: []string{},
 		},
-		types.ImageSummary{
+		{
 			ID:       "sha256:22334455667788990011",
 			RepoTags: []string{"test:2"},
 		},
-		types.ImageSummary{
+		{
 			ID:       "sha256:33445566778899001122",
 			RepoTags: []string{"test:3", "test:4"},
 		},
@@ -156,9 +156,9 @@ func TestFindImage(t *testing.T) {
 
 func TestGetImagesTags(t *testing.T) {
 	tags := GetImagesTags([]*types.ImageSummary{
-		&types.ImageSummary{RepoTags: []string{"a:1"}},
-		&types.ImageSummary{RepoTags: []string{"a:2"}},
-		&types.ImageSummary{RepoTags: []string{"a"}},
+		{RepoTags: []string{"a:1"}},
+		{RepoTags: []string{"a:2"}},
+		{RepoTags: []string{"a"}},
 	})
 
 	assert.Equal(t, []string{"1", "2", "latest"}, tags)

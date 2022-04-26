@@ -29,7 +29,7 @@ func TestRunContainer(t *testing.T) {
 				gomock.Any(),
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -55,7 +55,7 @@ func TestRunContainer(t *testing.T) {
 				gomock.Any(),
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		expectedErr := errors.New("error-on-start")
 		cli.EXPECT().
@@ -88,23 +88,23 @@ func TestRunContainer(t *testing.T) {
 				},
 				&container.HostConfig{
 					PortBindings: nat.PortMap{
-						"1000/tcp": []nat.PortBinding{nat.PortBinding{HostIP: "0.0.0.0", HostPort: "1001"}},
-						"2000/tcp": []nat.PortBinding{nat.PortBinding{HostIP: "0.0.0.0", HostPort: "2001"}},
+						"1000/tcp": []nat.PortBinding{{HostIP: "0.0.0.0", HostPort: "1001"}},
+						"2000/tcp": []nat.PortBinding{{HostIP: "0.0.0.0", HostPort: "2001"}},
 					},
 					Mounts: []mount.Mount{
-						mount.Mount{
+						{
 							Type:   mount.TypeBind,
 							Source: "/src1",
 							Target: "/dst1",
 						},
-						mount.Mount{
+						{
 							Type:   mount.TypeBind,
 							Source: "/src2",
 							Target: "/dst2",
 						},
 					},
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -112,19 +112,19 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{
-				types.Container{},
+				{},
 			}, nil)
 
 		RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 			Volumes: []Mapping{
-				Mapping{"/src1", "/dst1"},
-				Mapping{"/src2", "/dst2"},
+				{"/src1", "/dst1"},
+				{"/src2", "/dst2"},
 			},
 			Ports: []Mapping{
-				Mapping{"1001", "1000"},
-				Mapping{"2001", "2000"},
+				{"1001", "1000"},
+				{"2001", "2000"},
 			},
 		})
 	})
@@ -146,7 +146,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -154,17 +154,17 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{
-				types.Container{},
+				{},
 			}, nil)
 
 		RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 			Env: []Mapping{
-				Mapping{"A", "1"},
-				Mapping{"B", ""},
-				Mapping{"C", "3"},
-				Mapping{"D", ""},
+				{"A", "1"},
+				{"B", ""},
+				{"C", "3"},
+				{"D", ""},
 			},
 		})
 	})
@@ -183,7 +183,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				&container.HostConfig{},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -191,15 +191,15 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{
-				types.Container{},
+				{},
 			}, nil)
 
 		RunContainer(cli, &RunContainerOptions{
 			Image: "image:1",
 			Name:  "container-1",
 			Env: []Mapping{
-				Mapping{"A", "1"},
-				Mapping{"B", "2"},
+				{"A", "1"},
+				{"B", "2"},
 			},
 			EnvReader: strings.NewReader("#test\nA=0\n"),
 		})
@@ -216,7 +216,7 @@ func TestRunContainer(t *testing.T) {
 						Name: "on-failure",
 					},
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -224,7 +224,7 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{
-				types.Container{},
+				{},
 			}, nil)
 
 		RunContainer(cli, &RunContainerOptions{
@@ -243,7 +243,7 @@ func TestRunContainer(t *testing.T) {
 				&container.HostConfig{
 					NetworkMode: container.NetworkMode("test-net"),
 				},
-				nil, "container-1").
+				nil, nil, "container-1").
 			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -251,7 +251,7 @@ func TestRunContainer(t *testing.T) {
 		cli.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{
-				types.Container{},
+				{},
 			}, nil)
 
 		RunContainer(cli, &RunContainerOptions{
@@ -268,11 +268,11 @@ func TestRunContainerOptionsJSONMarshal(t *testing.T) {
 		Name:    "container-1",
 		Network: "network-1",
 		Volumes: []Mapping{
-			Mapping{"/src1", "/dst1"},
+			{"/src1", "/dst1"},
 		},
 		Env: []Mapping{
-			Mapping{"A", "1"},
-			Mapping{"B", "2"},
+			{"A", "1"},
+			{"B", "2"},
 		},
 	}
 
@@ -322,7 +322,7 @@ func TestRunContainerOptionsJSONUnmarshal(t *testing.T) {
 	assert.Equal(t, RunContainerOptions{
 		Image: "image:1",
 		Name:  "container-1",
-		Env:   []Mapping{Mapping{"A", "1"}, Mapping{"B", "2"}},
+		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
 	}, options)
 }
 
@@ -332,11 +332,11 @@ func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
 		Name:    "container-1",
 		Network: "network-1",
 		Volumes: []Mapping{
-			Mapping{"/src1", "/dst1"},
+			{"/src1", "/dst1"},
 		},
 		Env: []Mapping{
-			Mapping{"A", "1"},
-			Mapping{"B", "2"},
+			{"A", "1"},
+			{"B", "2"},
 		},
 	}
 
@@ -374,7 +374,7 @@ func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
 	assert.Equal(t, RunContainerOptions{
 		Image: "image:1",
 		Name:  "container-1",
-		Env:   []Mapping{Mapping{"A", "1"}, Mapping{"B", "2"}},
+		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
 	}, options)
 }
 

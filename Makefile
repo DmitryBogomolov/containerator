@@ -1,5 +1,8 @@
+install-lint:
+	go install golang.org/x/lint/golint@latest
+
 install-mockgen:
-	go get -v github.com/golang/mock/mockgen
+	go install github.com/golang/mock/mockgen@latest
 
 generate-mocks:
 	mockgen -destination test_mocks/imageapiclient.go -package test_mocks github.com/docker/docker/client ImageAPIClient

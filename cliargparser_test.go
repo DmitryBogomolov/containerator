@@ -22,8 +22,8 @@ func TestMappingListVar(t *testing.T) {
 
 	t.Run("String / list", func(t *testing.T) {
 		obj := mappingListVar{list: []Mapping{
-			Mapping{Source: "a"},
-			Mapping{Source: "m", Target: "n"},
+			{Source: "a"},
+			{Source: "m", Target: "n"},
 		}}
 		assert.Equal(t, "[{a } {m n}]", obj.String())
 	})
@@ -33,18 +33,18 @@ func TestMappingListVar(t *testing.T) {
 
 		obj.Set("a")
 		assert.Equal(t, []Mapping{
-			Mapping{Source: "a"},
+			{Source: "a"},
 		}, obj.list)
 
 		obj.Set("x#y")
 		assert.Equal(t, []Mapping{
-			Mapping{Source: "a"},
-			Mapping{Source: "x", Target: "y"},
+			{Source: "a"},
+			{Source: "x", Target: "y"},
 		}, obj.list)
 	})
 
 	t.Run("Get", func(t *testing.T) {
-		list := []Mapping{Mapping{}, Mapping{}}
+		list := []Mapping{{}, {}}
 		obj := mappingListVar{list: list}
 
 		assert.Equal(t, list, obj.Get())
