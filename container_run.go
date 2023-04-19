@@ -15,21 +15,19 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-// Mapping struct defines source-target pair.
-//
-// Used to store volumes, port, environment variables mappings.
+// Mapping stores key-value pair. Used for volumes, ports, envrionment variables.
 type Mapping struct {
 	Source string
 	Target string
 }
 
-// MarshalJSON implements json.Marshaler interface for Mapping type.
+// MarshalJSON implements `json.Marshaler` interface.
 func (m Mapping) MarshalJSON() ([]byte, error) {
 	str := fmt.Sprintf(`{"%s":"%s"}`, m.Source, m.Target)
 	return []byte(str), nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler interface for Mapping type.
+// UnmarshalJSON implements `json.Unmarshaler` interface.
 func (m *Mapping) UnmarshalJSON(data []byte) error {
 	str := string(data)
 	str = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(str), "{"), "}")
@@ -42,14 +40,14 @@ func (m *Mapping) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler interface for Mapping type.
+// MarshalYAML implements `yaml.Marshaler` interface.
 func (m Mapping) MarshalYAML() (interface{}, error) {
 	ret := make(map[string]string)
 	ret[m.Source] = m.Target
 	return ret, nil
 }
 
-// UnmarshalYAML implements yaml.Unmarshaler interface for Mapping type.
+// UnmarshalYAML implements `yaml.Unmarshaler` interface.
 func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	tmp := make(map[string]string)
 	err := unmarshal(tmp)
@@ -64,7 +62,7 @@ func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// NewMappingListFromMap is a helper util that creates list of Mapping instances from dictionary.
+// NewMappingListFromMap creates list of Mapping instances from dictionary.
 func NewMappingListFromMap(data map[string]string) []Mapping {
 	ret := make([]Mapping, 0, len(data))
 	for source, target := range data {
@@ -73,7 +71,7 @@ func NewMappingListFromMap(data map[string]string) []Mapping {
 	return ret
 }
 
-// RestartPolicy type defines container restart policy.
+// RestartPolicy defines container restart policy.
 type RestartPolicy string
 
 // RestartPolicy values.
@@ -83,17 +81,11 @@ const (
 	RestartAlways        RestartPolicy = "always"
 )
 
-/*
-RunContainerOptions struct contains options used to create and start container.
-
-`Image` is required, rest are optional.
-`Env` has priority over `EnvReader`.
-Content `EnvReader` points to must be in *yaml* format:
-
-	A: 1
-	B: 2
-
-*/
+// RunContainerOptions contains options used to create and start container.
+//
+//`Image` is required, rest are optional.
+//`Env` has priority over `EnvReader`.
+//`EnvReader` expects *yaml*.
 type RunContainerOptions struct {
 	Image         string        `json:"image,omitempty" yaml:",omitempty"`
 	Name          string        `json:"name,omitempty" yaml:",omitempty"`
@@ -165,20 +157,19 @@ Roughly duplicates `docker run` command.
 If created container fails at start it is removed.
 
 	RunContainer(cli, &RunContainerOptions{
-		Image:			"my-image:1",		// or "sha256:<guid>"
-		Name:			"my-container-1",
-		RestartPolicy:	RestartAlways,
-		Network:		"my-network-1",
-		Volumes:		[]Mapping{
-			Mapping{"/tmp", "/usr/app"},
+		Image: "my-image:1", // or "sha256:<guid>"
+		Name: "my-container-1",
+		RestartPolicy: RestartAlways,
+		Network: "my-network-1",
+		Volumes: []Mapping{
+			{"/tmp", "/usr/app"},
 		},
-		Ports:			[]Mapping{
-			Mapping{"50001", "3000"},
+		Ports: []Mapping{
+			{"50001", "3000"},
 		},
-		Env:			[]Mapping{
-			Mapping{"A", "1"},
+		Env: []Mapping{
+			{"A", "1"},
 		},
-
 	}) -> &container
 */
 func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (*types.Container, error) {

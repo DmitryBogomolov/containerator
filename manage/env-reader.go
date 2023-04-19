@@ -34,11 +34,9 @@ func selectEnvFile(dir string, mode string) string {
 // ErrNoEnvFile is returned when neither <mode>.list no env.list is found in a directory.
 var ErrNoEnvFile = errors.New("env file is not found")
 
-/*
-GetEnvFileReader creates *EnvReader* searching directory with specified *mode*.
-
-	GetEnvFileReader("/path/to/dir", mode) -> reader, err
-*/
+// GetEnvFileReader creates *EnvReader* searching directory with specified *mode*.
+//
+//	GetEnvFileReader("/path/to/dir", mode) -> reader, err
 func GetEnvFileReader(dirPath string, mode string) (io.Reader, error) {
 	envFileName := selectEnvFile(dirPath, mode)
 	if envFileName == "" {

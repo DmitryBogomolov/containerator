@@ -7,11 +7,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-/*
-Config contains options for container management.
-
-*ImageRepo* is required, others are optional.
-*/
+// Config contains options for container management.
+//
+// `ImageRepo` is required, others are optional.
 type Config struct {
 	ImageRepo     string                  `yaml:"image_repo"`
 	ContainerName string                  `yaml:"container_name"`
@@ -24,11 +22,9 @@ type Config struct {
 	Modes         []string                `yaml:"modes"`
 }
 
-/*
-ReadConfig read config from yaml file.
-
-	ReadConfig("/path/to/config,yaml") -> &config, err
-*/
+// ReadConfig read config from yaml file.
+//
+//	ReadConfig("/path/to/config,yaml") -> &config, err
 func ReadConfig(pathToFile string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(pathToFile)
 	if err != nil {
