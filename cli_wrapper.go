@@ -29,38 +29,41 @@ func cliContainerList(cli client.ContainerAPIClient) ([]types.Container, error) 
 	return cli.ContainerList(ctx, types.ContainerListOptions{All: true})
 }
 
-func cliContainerCreate(cli client.ContainerAPIClient, config *container.Config, hostConfig *container.HostConfig, containerName string) (container.ContainerCreateCreatedBody, error) {
+func cliContainerCreate(
+	cli client.ContainerAPIClient,
+	config *container.Config, hostConfig *container.HostConfig, name string,
+) (container.ContainerCreateCreatedBody, error) {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
+	return cli.ContainerCreate(ctx, config, hostConfig, nil, nil, name)
 }
 
-func cliContainerStart(cli client.ContainerAPIClient, container string) error {
+func cliContainerStart(cli client.ContainerAPIClient, name string) error {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerStart(ctx, container, types.ContainerStartOptions{})
+	return cli.ContainerStart(ctx, name, types.ContainerStartOptions{})
 }
 
-func cliContainerStop(cli client.ContainerAPIClient, container string) error {
+func cliContainerStop(cli client.ContainerAPIClient, name string) error {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerStop(ctx, container, nil)
+	return cli.ContainerStop(ctx, name, container.StopOptions{})
 }
 
-func cliContainerRename(cli client.ContainerAPIClient, container string, newContainerName string) error {
+func cliContainerRename(cli client.ContainerAPIClient, name string, newName string) error {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerRename(ctx, container, newContainerName)
+	return cli.ContainerRename(ctx, name, newName)
 }
 
-func cliContainerRemove(cli client.ContainerAPIClient, container string) error {
+func cliContainerRemove(cli client.ContainerAPIClient, name string) error {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerRemove(ctx, container, types.ContainerRemoveOptions{Force: true})
+	return cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{Force: true})
 }
 
-func cliContainerInspect(cli client.ContainerAPIClient, container string) (types.ContainerJSON, error) {
+func cliContainerInspect(cli client.ContainerAPIClient, name string) (types.ContainerJSON, error) {
 	ctx, cancel := getContext()
 	defer cancel()
-	return cli.ContainerInspect(ctx, container)
+	return cli.ContainerInspect(ctx, name)
 }
