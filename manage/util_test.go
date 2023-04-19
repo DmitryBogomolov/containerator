@@ -64,13 +64,13 @@ func TestFindImage(t *testing.T) {
 	defer ctrl.Finish()
 
 	testImages := []types.ImageSummary{
-		types.ImageSummary{
+		{
 			RepoTags: []string{"test-image:1"},
 		},
-		types.ImageSummary{
+		{
 			RepoTags: []string{"test-image:2"},
 		},
-		types.ImageSummary{
+		{
 			RepoTags: []string{"test-image:3"},
 		},
 	}
@@ -130,8 +130,8 @@ func TestBuildContainerOptions(t *testing.T) {
 			RestartPolicy: containerator.RestartAlways,
 			Network:       "test-net",
 			Ports: []containerator.Mapping{
-				containerator.Mapping{Source: "210", Target: "1"},
-				containerator.Mapping{Source: "211", Target: "2"},
+				{Source: "210", Target: "1"},
+				{Source: "211", Target: "2"},
 			},
 		}
 		actual := buildContainerOptions(&Config{
