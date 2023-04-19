@@ -20,7 +20,7 @@ func TestSelectMode(t *testing.T) {
 		mode, i, err := selectMode("m4", conf)
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*NotValidModeError)).Mode, "m4", "error data")
+		assert.Equal(t, (err.(*NotValidModeError)).mode, "m4", "error data")
 		assert.Equal(t, "", mode, "mode")
 		assert.Equal(t, 0, i, "index")
 	})

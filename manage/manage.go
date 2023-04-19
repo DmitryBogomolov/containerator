@@ -52,20 +52,30 @@ const DefaultConfigName = "config.yaml"
 
 // NoContainerError is returned on attempt to remove container when it is not found.
 type NoContainerError struct {
-	Container string
+	container string
 }
 
-func (e *NoContainerError) Error() string {
-	return fmt.Sprintf("container '%s' is not found", e.Container)
+func (err *NoContainerError) Error() string {
+	return fmt.Sprintf("container '%s' is not found", err.container)
+}
+
+// Container returns container name.
+func (err *NoContainerError) Container() string {
+	return err.container
 }
 
 // ContainerAlreadyRunningError is returned on attempt to run container when similar container is already running.
 type ContainerAlreadyRunningError struct {
-	Container *types.Container
+	container *types.Container
 }
 
-func (e *ContainerAlreadyRunningError) Error() string {
-	return fmt.Sprintf("container '%s' is already running", containerator.GetContainerName(e.Container))
+func (err *ContainerAlreadyRunningError) Error() string {
+	return fmt.Sprintf("container '%s' is already running", containerator.GetContainerName(err.container))
+}
+
+// Container returns running container.
+func (err *ContainerAlreadyRunningError) Container() *types.Container {
+	return err.container
 }
 
 /*

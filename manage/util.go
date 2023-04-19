@@ -20,12 +20,22 @@ func findIndex(item string, list []string) int {
 
 // NotValidModeError indicates that specified mode is not found amoung config modes.
 type NotValidModeError struct {
-	Mode  string
-	Modes []string
+	mode  string
+	modes []string
 }
 
-func (e *NotValidModeError) Error() string {
-	return fmt.Sprintf("mode '%s' is not valid", e.Mode)
+func (err *NotValidModeError) Error() string {
+	return fmt.Sprintf("mode '%s' is not valid", err.mode)
+}
+
+// Mode returns mode.
+func (err *NotValidModeError) Mode() string {
+	return err.mode
+}
+
+// Modes returns config modes.
+func (err *NotValidModeError) Modes() []string {
+	return append([]string(nil), err.modes...)
 }
 
 func selectMode(modeOption string, conf *Config) (string, int, error) {

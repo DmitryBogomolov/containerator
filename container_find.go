@@ -32,11 +32,16 @@ func GetContainerShortID(container *types.Container) string {
 
 // ContainerNotFoundError indicates that container with specified ID or name is not found.
 type ContainerNotFoundError struct {
-	Container string
+	container string
 }
 
 func (err *ContainerNotFoundError) Error() string {
-	return fmt.Sprintf("container '%s' is not found", err.Container)
+	return fmt.Sprintf("container '%s' is not found", err.container)
+}
+
+// Container returns container ID or name.
+func (err *ContainerNotFoundError) Container() string {
+	return err.container
 }
 
 // FindContainerByID searches container by id.
