@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type mappingListVar struct {
+type _MappingListVar struct {
 	list     []Mapping
 	sep      string
 	allowOne bool
@@ -28,11 +28,11 @@ type MappingListVar interface {
 	Get() []Mapping
 }
 
-func (m *mappingListVar) String() string {
+func (m *_MappingListVar) String() string {
 	return fmt.Sprintf("%v", m.list)
 }
 
-func (m *mappingListVar) Set(value string) error {
+func (m *_MappingListVar) Set(value string) error {
 	parts := strings.SplitN(value, m.sep, 2)
 	mapping := Mapping{Source: parts[0]}
 	if len(parts) > 1 {
@@ -44,7 +44,7 @@ func (m *mappingListVar) Set(value string) error {
 	return nil
 }
 
-func (m *mappingListVar) Get() []Mapping {
+func (m *_MappingListVar) Get() []Mapping {
 	return m.list
 }
 
@@ -65,5 +65,5 @@ NewMappingListVar creates instance that implements MappingListVar interface.
 	options.Env = env.Get()
 */
 func NewMappingListVar(sep string, allowOne bool) MappingListVar {
-	return &mappingListVar{sep: sep, allowOne: allowOne}
+	return &_MappingListVar{sep: sep, allowOne: allowOne}
 }
