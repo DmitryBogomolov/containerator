@@ -4,9 +4,8 @@ install-lint:
 install-mockgen:
 	go install github.com/golang/mock/mockgen@latest
 
-generate-mocks:
-	mockgen -destination test_mocks/imageapiclient.go -package test_mocks github.com/docker/docker/client ImageAPIClient
-	mockgen -destination test_mocks/containerapiclient.go -package test_mocks github.com/docker/docker/client ContainerAPIClient
+generate:
+	go generate ./...
 
 test:
 	go test -v -coverprofile=coverage.out ./...
