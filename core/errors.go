@@ -1,15 +1,10 @@
-package errors
+package core
 
 import "fmt"
 
 // ContainerNotFoundError indicates that container with specified ID or name is not found.
 type ContainerNotFoundError struct {
 	container string
-}
-
-// ContainerNotFound creates ContainerNotFoundError.
-func ContainerNotFound(container string) ContainerNotFoundError {
-	return ContainerNotFoundError{container}
 }
 
 func (err ContainerNotFoundError) Error() string {
@@ -24,11 +19,6 @@ func (err ContainerNotFoundError) Container() string {
 // ImageNotFoundError indicates that image with specified ID or full name is not found.
 type ImageNotFoundError struct {
 	image string
-}
-
-// ImageNotFound creates ImageNotFoundError.
-func ImageNotFound(image string) ImageNotFoundError {
-	return ImageNotFoundError{image}
 }
 
 func (err ImageNotFoundError) Error() string {

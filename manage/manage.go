@@ -8,7 +8,6 @@ import (
 	"io"
 
 	"github.com/DmitryBogomolov/containerator/core"
-	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -100,7 +99,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*errors.ContainerNotFoundError); !ok {
+		if _, ok := err.(*core.ContainerNotFoundError); !ok {
 			return nil, err
 		}
 		currentContainer = nil

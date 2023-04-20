@@ -3,7 +3,6 @@ package core
 import (
 	"strings"
 
-	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -79,7 +78,7 @@ func FindImageByID(cli client.ImageAPIClient, id string) (*types.ImageSummary, e
 			return &images[i], nil
 		}
 	}
-	return nil, errors.ImageNotFound(id)
+	return nil, ImageNotFoundError{id}
 }
 
 // FindImageByShortID searches image by short id.
@@ -98,7 +97,7 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSumma
 			return &images[i], nil
 		}
 	}
-	return nil, errors.ImageNotFound(id)
+	return nil, ImageNotFoundError{id}
 }
 
 // FindImageByRepoTag searches image by repo tag.
@@ -120,7 +119,7 @@ func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.Image
 			}
 		}
 	}
-	return nil, errors.ImageNotFound(repoTag)
+	return nil, ImageNotFoundError{repoTag}
 }
 
 // FindImagesByRepo searches images by repo.

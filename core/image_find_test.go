@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/DmitryBogomolov/containerator/core"
-	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/golang/mock/gomock"
@@ -102,7 +101,7 @@ func TestFindImage(t *testing.T) {
 	t.Run("ByID / not found", func(t *testing.T) {
 		image, err := FindImageByID(cli, "unknown")
 		assert.Error(t, err)
-		imageErr, ok := err.(errors.ImageNotFoundError)
+		imageErr, ok := err.(ImageNotFoundError)
 		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
@@ -116,7 +115,7 @@ func TestFindImage(t *testing.T) {
 	t.Run("ByShortID / not found", func(t *testing.T) {
 		image, err := FindImageByShortID(cli, "unknown")
 		assert.Error(t, err)
-		imageErr, ok := err.(errors.ImageNotFoundError)
+		imageErr, ok := err.(ImageNotFoundError)
 		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
@@ -136,7 +135,7 @@ func TestFindImage(t *testing.T) {
 	t.Run("ByRepoTag / not found", func(t *testing.T) {
 		image, err := FindImageByRepoTag(cli, "unknown")
 		assert.Error(t, err)
-		imageErr, ok := err.(errors.ImageNotFoundError)
+		imageErr, ok := err.(ImageNotFoundError)
 		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
