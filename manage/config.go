@@ -22,7 +22,7 @@ type Config struct {
 	Modes         []string       `yaml:"modes"`
 }
 
-// ReadConfig read config from yaml file.
+// ReadConfig reads config from yaml file.
 //
 //	ReadConfig("/path/to/config,yaml") -> &config, err
 func ReadConfig(pathToFile string) (*Config, error) {

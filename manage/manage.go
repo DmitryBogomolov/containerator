@@ -34,11 +34,9 @@ func updateContainer(options *core.RunContainerOptions, currentContainer *types.
 	return
 }
 
-/*
-Options type contains additional arguments for Manage function.
-
-*Mode* might be required (depends on *modes* in config), all others are optional.
-*/
+// Options contains additional arguments for Manage function.
+//
+// `Mode` might be required (depends on `Modes` in config), all others are optional.
 type Options struct {
 	Mode         string
 	Tag          string
@@ -81,25 +79,25 @@ func (err *ContainerAlreadyRunningError) Container() *types.Container {
 /*
 Manage runs containers with the last tag for the specified image repo.
 
-*Mode* should match those in config, otherwise shouldn't be defined.
-The newest tag is selected (if *Tag* is not defined).
-Use *Force* to override currently running container.
-Use *Remove* to remove currently running container.
+`Mode` should match those in config, otherwise shouldn't be defined.
+The newest tag is selected (if `Tag` is not defined).
+Use `Force` to override currently running container.
+Use `Remove` to remove currently running container.
 
 	Manage("/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
 */
-func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, error) {
-	mode, modeIndex, err := selectMode(options.Mode, conf)
+func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, error) {
+	mode, modeIndex, err := selectMode(options.Mode, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	containerName := getContainerName(conf, mode)
+	containerName := getContainerName(cfg, mode)
 
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*core.ContainerNotFoundError); !ok {
+		if _, ok := err.(core.ContainerNotFoundError); !ok {
 			return nil, err
 		}
 		currentContainer = nil
@@ -116,7 +114,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 		return currentContainer, nil
 	}
 
-	image, err := findImage(cli.(client.ImageAPIClient), conf.ImageRepo, options.Tag)
+	image, err := findImage(cli.(client.ImageAPIClient), cfg.ImageRepo, options.Tag)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +124,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 		return nil, &ContainerAlreadyRunningError{currentContainer}
 	}
 
-	runOptions := buildContainerOptions(conf, imageName, containerName, modeIndex)
+	runOptions := buildContainerOptions(cfg, imageName, containerName, modeIndex)
 	if options.GetEnvReader != nil {
 		reader, err := options.GetEnvReader(mode)
 		if err != nil {

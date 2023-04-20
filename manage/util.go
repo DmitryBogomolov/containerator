@@ -9,7 +9,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func findIndex(item string, list []string) int {
+func findIndex[T comparable](item T, list []T) int {
 	for i, obj := range list {
 		if obj == item {
 			return i
