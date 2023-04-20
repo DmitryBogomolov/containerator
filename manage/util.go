@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -71,7 +72,7 @@ func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*t
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, &core.ImageNotFoundError{Image: imageRepo}
+		return nil, errors.ImageNotFound(imageRepo)
 	}
 	return list[0], nil
 }

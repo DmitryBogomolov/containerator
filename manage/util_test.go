@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/DmitryBogomolov/containerator/core/errors"
 
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
@@ -88,7 +89,7 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image", "4")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*core.ImageNotFoundError)).Image, "test-image:4", "error data")
+		assert.Equal(t, (err.(errors.ImageNotFoundError)).Image(), "test-image:4", "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 
@@ -103,7 +104,7 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image-other", "")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*core.ImageNotFoundError)).Image, "test-image-other", "error data")
+		assert.Equal(t, (err.(errors.ImageNotFoundError)).Image(), "test-image-other", "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 }

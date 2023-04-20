@@ -7,30 +7,31 @@ import (
 	"fmt"
 	"io"
 
-	containerator "github.com/DmitryBogomolov/containerator/core"
+	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-func updateContainer(options *containerator.RunContainerOptions, currentContainer *types.Container,
+func updateContainer(options *core.RunContainerOptions, currentContainer *types.Container,
 	cli client.ContainerAPIClient) (container *types.Container, err error) {
 	if currentContainer != nil {
 		currentContainerID := currentContainer.ID
-		if err = containerator.SuspendContainer(cli, currentContainerID); err != nil {
+		if err = core.SuspendContainer(cli, currentContainerID); err != nil {
 			return
 		}
 		defer func() {
 			if err != nil {
-				otherErr := containerator.ResumeContainer(cli, currentContainerID, options.Name)
+				otherErr := core.ResumeContainer(cli, currentContainerID, options.Name)
 				if otherErr != nil {
 					err = fmt.Errorf("%v (%v)", err, otherErr)
 				}
 			} else {
-				err = containerator.RemoveContainer(cli, currentContainerID)
+				err = core.RemoveContainer(cli, currentContainerID)
 			}
 		}()
 	}
-	container, err = containerator.RunContainer(cli, options)
+	container, err = core.RunContainer(cli, options)
 	return
 }
 
@@ -70,7 +71,7 @@ type ContainerAlreadyRunningError struct {
 }
 
 func (err *ContainerAlreadyRunningError) Error() string {
-	return fmt.Sprintf("container '%s' is already running", containerator.GetContainerName(err.container))
+	return fmt.Sprintf("container '%s' is already running", core.GetContainerName(err.container))
 }
 
 // Container returns running container.
@@ -97,9 +98,9 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 	containerName := getContainerName(conf, mode)
 
 	containerCli := cli.(client.ContainerAPIClient)
-	currentContainer, err := containerator.FindContainerByName(containerCli, containerName)
+	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*containerator.ContainerNotFoundError); !ok {
+		if _, ok := err.(*errors.ContainerNotFoundError); !ok {
 			return nil, err
 		}
 		currentContainer = nil
@@ -109,7 +110,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 		if currentContainer == nil {
 			return nil, &NoContainerError{containerName}
 		}
-		err = containerator.RemoveContainer(containerCli, currentContainer.ID)
+		err = core.RemoveContainer(containerCli, currentContainer.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,7 @@ func Manage(cli interface{}, conf *Config, options *Options) (*types.Container, 
 	if err != nil {
 		return nil, err
 	}
-	imageName := containerator.GetImageFullName(image)
+	imageName := core.GetImageFullName(image)
 
 	if currentContainer != nil && currentContainer.ImageID == image.ID && !options.Force {
 		return nil, &ContainerAlreadyRunningError{currentContainer}

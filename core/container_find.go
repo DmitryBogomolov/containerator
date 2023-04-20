@@ -1,11 +1,12 @@
 package core
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+
+	"github.com/DmitryBogomolov/containerator/core/errors"
 )
 
 // GetContainerName returns container name.
@@ -30,20 +31,6 @@ func GetContainerShortID(container *types.Container) string {
 	return container.ID[:shortIDLength]
 }
 
-// ContainerNotFoundError indicates that container with specified ID or name is not found.
-type ContainerNotFoundError struct {
-	container string
-}
-
-func (err *ContainerNotFoundError) Error() string {
-	return fmt.Sprintf("container '%s' is not found", err.container)
-}
-
-// Container returns container ID or name.
-func (err *ContainerNotFoundError) Container() string {
-	return err.container
-}
-
 // FindContainerByID searches container by id.
 //
 // `id` is a full (64 characters) identifier.
@@ -59,7 +46,7 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 			return &containers[i], nil
 		}
 	}
-	return nil, &ContainerNotFoundError{id}
+	return nil, errors.ContainerNotFound(id)
 }
 
 // FindContainerByShortID searches container by short id.
@@ -78,7 +65,7 @@ func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Co
 			return &containers[i], nil
 		}
 	}
-	return nil, &ContainerNotFoundError{id}
+	return nil, errors.ContainerNotFound(id)
 }
 
 // FindContainerByName searches container by name.
@@ -99,7 +86,7 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 			}
 		}
 	}
-	return nil, &ContainerNotFoundError{name}
+	return nil, errors.ContainerNotFound(name)
 }
 
 // FindContainersByImageID searches containers by image id.
