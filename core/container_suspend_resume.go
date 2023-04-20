@@ -5,13 +5,6 @@ import (
 	"github.com/docker/docker/pkg/namesgenerator"
 )
 
-// RemoveContainer removes container.
-//
-//	RemoveContainer(cli, "my-container")
-func RemoveContainer(cli client.ContainerAPIClient, name string) error {
-	return cliContainerRemove(cli, name)
-}
-
 // SuspendContainer renames and stops container.
 //
 // Uses docker names generator to acquire temporary container name.
