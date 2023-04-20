@@ -78,7 +78,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	}
 	return map[string]string{
 		"name":  core.GetContainerName(cont),
-		"image": config.ImageRepo,
+		"image": config.ImageName,
 		"tag":   getTag(cli.(client.ImageAPIClient), cont),
 	}, nil
 }
@@ -88,7 +88,7 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
-	images, err := core.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageRepo)
+	images, err := core.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageName)
 	if err != nil {
 		return nil, err
 	}

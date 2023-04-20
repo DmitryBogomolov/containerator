@@ -52,7 +52,7 @@ func selectMode(modeOption string, conf *Config) (string, int, error) {
 func getContainerName(conf *Config, mode string) string {
 	name := conf.ContainerName
 	if name == "" {
-		name = conf.ImageRepo
+		name = conf.ImageName
 	}
 	if mode != "" {
 		name += "-" + mode

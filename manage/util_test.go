@@ -44,17 +44,17 @@ func TestSelectMode(t *testing.T) {
 
 func TestGetContainerName(t *testing.T) {
 	t.Run("Without mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-name"}, "")
+		name := getContainerName(&Config{ImageName: "test-name"}, "")
 		assert.Equal(t, "test-name", name)
 	})
 
 	t.Run("With mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-name"}, "dev")
+		name := getContainerName(&Config{ImageName: "test-name"}, "dev")
 		assert.Equal(t, "test-name-dev", name)
 	})
 
 	t.Run("Prefer container name", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-image", ContainerName: "test-container"}, "m1")
+		name := getContainerName(&Config{ImageName: "test-image", ContainerName: "test-container"}, "m1")
 		assert.Equal(t, "test-container-m1", name)
 	})
 }

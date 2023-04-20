@@ -45,13 +45,13 @@ func run() error {
 		config = &manage.Config{}
 	}
 	if imageRepo != "" {
-		config.ImageRepo = imageRepo
+		config.ImageName = imageRepo
 	}
 	if containerName != "" {
 		config.ContainerName = containerName
 	}
 
-	if config.ImageRepo == "" {
+	if config.ImageName == "" {
 		return errors.New("image repo is not defined")
 	}
 

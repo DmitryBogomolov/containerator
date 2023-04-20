@@ -33,29 +33,20 @@ func updateContainer(
 }
 
 // Options contains additional arguments for Manage function.
-//
-// `Mode` might be required (depends on `Modes` in config), all others are optional.
 type Options struct {
-	Mode         string
-	Tag          string
-	Force        bool
-	Remove       bool
+	Mode         string // If set should match one of modes in config
+	Tag          string // Image tag; if not set newest image is selected
+	Force        bool   // If set running container is replaced
+	Remove       bool   // If set running container is removed
 	GetEnvReader func(string) (io.Reader, error)
 }
 
 // DefaultConfigName defines default name of config file.
 const DefaultConfigName = "config.yaml"
 
-/*
-Manage runs containers with the last tag for the specified image repo.
-
-`Mode` should match those in config, otherwise shouldn't be defined.
-The newest tag is selected (if `Tag` is not defined).
-Use `Force` to override currently running container.
-Use `Remove` to remove currently running container.
-
-	Manage("/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
-*/
+// Manage runs containers with the last tag for the specified image repo.
+//
+//	Manage(cli, "/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
 func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, error) {
 	mode, modeIndex, err := selectMode(options.Mode, cfg)
 	if err != nil {
@@ -83,7 +74,7 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 		return currentContainer, nil
 	}
 
-	image, err := findImage(cli.(client.ImageAPIClient), cfg.ImageRepo, options.Tag)
+	image, err := findImage(cli.(client.ImageAPIClient), cfg.ImageName, options.Tag)
 	if err != nil {
 		return nil, err
 	}
