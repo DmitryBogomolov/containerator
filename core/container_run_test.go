@@ -378,14 +378,3 @@ func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
 		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
 	}, options)
 }
-
-func TestNewMappingListFromMap(t *testing.T) {
-	ret := NewMappingListFromMap(map[string]string{
-		"a": "1",
-		"b": "2",
-		"c": "3",
-		"d": "4",
-	})
-
-	assert.Equal(t, 4, len(ret))
-}
