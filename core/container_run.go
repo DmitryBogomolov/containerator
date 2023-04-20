@@ -1,10 +1,10 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -21,44 +21,46 @@ type Mapping struct {
 	Target string
 }
 
+func (mapping Mapping) toMap() map[string]string {
+	ret := map[string]string{}
+	ret[mapping.Source] = mapping.Target
+	return ret
+}
+
+func (mapping *Mapping) fromMap(data map[string]string) {
+	for key, val := range data {
+		mapping.Source = key
+		mapping.Target = val
+	}
+}
+
 // MarshalJSON implements `json.Marshaler` interface.
-func (m Mapping) MarshalJSON() ([]byte, error) {
-	str := fmt.Sprintf(`{"%s":"%s"}`, m.Source, m.Target)
-	return []byte(str), nil
+func (mapping Mapping) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mapping.toMap())
 }
 
 // UnmarshalJSON implements `json.Unmarshaler` interface.
-func (m *Mapping) UnmarshalJSON(data []byte) error {
-	str := string(data)
-	str = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(str), "{"), "}")
-	parts := strings.SplitN(str, ":", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("not valid JSON Mapping: %s", data)
+func (mapping *Mapping) UnmarshalJSON(data []byte) error {
+	var tmp map[string]string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
 	}
-	m.Source = strings.Trim(strings.TrimSpace(parts[0]), `"`)
-	m.Target = strings.Trim(strings.TrimSpace(parts[1]), `"`)
+	mapping.fromMap(tmp)
 	return nil
 }
 
 // MarshalYAML implements `yaml.Marshaler` interface.
-func (m Mapping) MarshalYAML() (interface{}, error) {
-	ret := make(map[string]string)
-	ret[m.Source] = m.Target
-	return ret, nil
+func (mapping Mapping) MarshalYAML() (interface{}, error) {
+	return mapping.toMap(), nil
 }
 
 // UnmarshalYAML implements `yaml.Unmarshaler` interface.
-func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	tmp := make(map[string]string)
-	err := unmarshal(tmp)
-	if err != nil {
+func (mapping *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var tmp map[string]string
+	if err := unmarshal(&tmp); err != nil {
 		return err
 	}
-	for key, val := range tmp {
-		m.Source = key
-		m.Target = val
-		break
-	}
+	mapping.fromMap(tmp)
 	return nil
 }
 
