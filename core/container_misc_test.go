@@ -1,10 +1,11 @@
-package core
+package core_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"

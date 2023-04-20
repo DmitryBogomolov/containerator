@@ -1,4 +1,4 @@
-package core
+package core_test
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"

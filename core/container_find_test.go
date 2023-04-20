@@ -1,8 +1,9 @@
-package core
+package core_test
 
 import (
 	"testing"
 
+	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/core/errors"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/stretchr/testify/assert"
