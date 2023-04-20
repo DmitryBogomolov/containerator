@@ -74,8 +74,9 @@ func findImage(cli client.ImageAPIClient, name string, tag string) (*types.Image
 	return item, err
 }
 
-func buildContainerOptions(conf *Config, imageName string, containerName string,
-	modeIndex int) *core.RunContainerOptions {
+func buildContainerOptions(
+	conf *Config, imageName string, containerName string, modeIndex int,
+) *core.RunContainerOptions {
 	ret := core.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,

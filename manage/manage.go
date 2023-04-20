@@ -1,6 +1,4 @@
-/*
-Package manage contains function to run, suspend, resume, remove containers.
-*/
+// Package manage contains function to run, suspend, resume, remove containers.
 package manage
 
 import (
@@ -79,8 +77,7 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 		if currentContainer == nil {
 			return nil, &NoContainerError{containerName}
 		}
-		err = core.RemoveContainer(containerCli, currentContainer.ID)
-		if err != nil {
+		if err = core.RemoveContainer(containerCli, currentContainer.ID); err != nil {
 			return nil, err
 		}
 		return currentContainer, nil
