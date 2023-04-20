@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/api/types"
@@ -21,11 +21,11 @@ func parseBool(value string) bool {
 }
 
 func getTag(cli client.ImageAPIClient, cont *types.Container) string {
-	image, err := containerator.FindImageByID(cli, cont.ImageID)
+	image, err := core.FindImageByID(cli, cont.ImageID)
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
 	}
-	_, tag := containerator.SplitImageNameTag(containerator.GetImageFullName(image))
+	_, tag := core.SplitImageNameTag(core.GetImageFullName(image))
 	return tag
 }
 
@@ -77,7 +77,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 		return nil, err
 	}
 	return map[string]string{
-		"name":  containerator.GetContainerName(cont),
+		"name":  core.GetContainerName(cont),
 		"image": config.ImageRepo,
 		"tag":   getTag(cli.(client.ImageAPIClient), cont),
 	}, nil
@@ -88,12 +88,12 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
-	images, err := containerator.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageRepo)
+	images, err := core.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageRepo)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"modes": config.Modes,
-		"tags":  containerator.GetImagesTags(images),
+		"tags":  core.GetImagesTags(images),
 	}, nil
 }

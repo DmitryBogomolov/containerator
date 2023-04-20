@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/DmitryBogomolov/containerator"
+	containerator "github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )

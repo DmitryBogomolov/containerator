@@ -1,4 +1,4 @@
-package containerator
+package core
 
 import (
 	"context"

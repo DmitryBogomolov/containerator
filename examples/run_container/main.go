@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
 )
 
@@ -15,11 +15,11 @@ func run() error {
 	flag.StringVar(&imageName, "image", "", "image name")
 	var containerName string
 	flag.StringVar(&containerName, "name", "", "container name")
-	volumes := containerator.NewMappingListVar(":", false)
+	volumes := core.NewMappingListVar(":", false)
 	flag.Var(volumes, "volume", "volume")
-	ports := containerator.NewMappingListVar(":", false)
+	ports := core.NewMappingListVar(":", false)
 	flag.Var(ports, "port", "port")
-	env := containerator.NewMappingListVar("=", true)
+	env := core.NewMappingListVar("=", true)
 	flag.Var(env, "env", "environment")
 	var envFile string
 	flag.StringVar(&envFile, "env-file", "", "env file")
@@ -40,24 +40,24 @@ func run() error {
 		return err
 	}
 
-	options := &containerator.RunContainerOptions{
+	options := &core.RunContainerOptions{
 		Image: imageName,
 		Name:  containerName,
 	}
 	options.Volumes = volumes.Get()
 	options.Ports = ports.Get()
 	options.Env = env.Get()
-	options.RestartPolicy = containerator.RestartPolicy(restart)
+	options.RestartPolicy = core.RestartPolicy(restart)
 	options.Network = network
 
-	container, err := containerator.RunContainer(cli, options)
+	container, err := core.RunContainer(cli, options)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("%s %s %s %s\n",
 		imageName,
-		containerator.GetContainerShortID(container),
-		containerator.GetContainerName(container),
+		core.GetContainerShortID(container),
+		core.GetContainerName(container),
 		container.State)
 
 	return nil

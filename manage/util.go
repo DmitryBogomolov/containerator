@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -63,34 +63,34 @@ func getContainerName(conf *Config, mode string) string {
 func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*types.ImageSummary, error) {
 	if imageTag != "" {
 		repoTag := imageRepo + ":" + imageTag
-		item, err := containerator.FindImageByRepoTag(cli, repoTag)
+		item, err := core.FindImageByRepoTag(cli, repoTag)
 		return item, err
 	}
-	list, err := containerator.FindImagesByRepo(cli, imageRepo)
+	list, err := core.FindImagesByRepo(cli, imageRepo)
 	if err != nil {
 		return nil, err
 	}
 	if len(list) == 0 {
-		return nil, &containerator.ImageNotFoundError{Image: imageRepo}
+		return nil, &core.ImageNotFoundError{Image: imageRepo}
 	}
 	return list[0], nil
 }
 
 func buildContainerOptions(conf *Config, imageName string, containerName string,
-	modeIndex int) *containerator.RunContainerOptions {
-	ret := containerator.RunContainerOptions{
+	modeIndex int) *core.RunContainerOptions {
+	ret := core.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,
-		RestartPolicy: containerator.RestartAlways,
+		RestartPolicy: core.RestartAlways,
 		Network:       conf.Network,
 		Volumes:       conf.Volumes,
 		Env:           conf.Env,
 	}
 	if len(conf.Ports) > 0 {
 		basePort := int(conf.BasePort) + int(conf.PortOffset)*modeIndex
-		ports := make([]containerator.Mapping, len(conf.Ports))
+		ports := make([]core.Mapping, len(conf.Ports))
 		for i, port := range conf.Ports {
-			ports[i] = containerator.Mapping{
+			ports[i] = core.Mapping{
 				Source: strconv.Itoa(basePort + i),
 				Target: strconv.Itoa(int(port)),
 			}
