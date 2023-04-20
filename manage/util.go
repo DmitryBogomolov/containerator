@@ -60,20 +60,18 @@ func getContainerName(conf *Config, mode string) string {
 	return name
 }
 
-func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*types.ImageSummary, error) {
-	if imageTag != "" {
-		repoTag := imageRepo + ":" + imageTag
-		item, err := core.FindImageByRepoTag(cli, repoTag)
-		return item, err
+func findImage(cli client.ImageAPIClient, name string, tag string) (*types.ImageSummary, error) {
+	if tag == "" {
+		list, err := core.FindImagesByRepo(cli, name)
+		if err != nil {
+			return nil, err
+		}
+		if len(list) > 0 {
+			return list[0], nil
+		}
 	}
-	list, err := core.FindImagesByRepo(cli, imageRepo)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return nil, nil // TODO: core.ImageNotFound(imageRepo)
-	}
-	return list[0], nil
+	item, err := core.FindImageByRepoTag(cli, core.JoinImageNameTag(name, tag))
+	return item, err
 }
 
 func buildContainerOptions(conf *Config, imageName string, containerName string,
