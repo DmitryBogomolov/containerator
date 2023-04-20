@@ -15,11 +15,11 @@ func run() error {
 	flag.StringVar(&imageName, "image", "", "image name")
 	var containerName string
 	flag.StringVar(&containerName, "name", "", "container name")
-	volumes := core.NewMappingListVar(":", false)
+	volumes := core.NewMappingListFlag(":", false)
 	flag.Var(volumes, "volume", "volume")
-	ports := core.NewMappingListVar(":", false)
+	ports := core.NewMappingListFlag(":", false)
 	flag.Var(ports, "port", "port")
-	env := core.NewMappingListVar("=", true)
+	env := core.NewMappingListFlag("=", true)
 	flag.Var(env, "env", "environment")
 	var envFile string
 	flag.StringVar(&envFile, "env-file", "", "env file")

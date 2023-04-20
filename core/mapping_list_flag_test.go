@@ -6,22 +6,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewMappingListVar(t *testing.T) {
-	obj := NewMappingListVar("-", true)
-	actual, ok := obj.(*_MappingListVar)
+func TestNewMappingListFlagValue(t *testing.T) {
+	obj := NewMappingListFlag("-", true)
+	actual, ok := obj.(*_MappingListFlag)
 	assert.True(t, ok)
-	assert.Equal(t, "-", actual.sep)
+	assert.Equal(t, "-", actual.separator)
 	assert.Equal(t, true, actual.allowOne)
 }
 
-func TestMappingListVar(t *testing.T) {
+func TestMappingListFlagValue(t *testing.T) {
 	t.Run("String / empty", func(t *testing.T) {
-		obj := _MappingListVar{}
+		obj := _MappingListFlag{}
 		assert.Equal(t, "[]", obj.String())
 	})
 
 	t.Run("String / list", func(t *testing.T) {
-		obj := _MappingListVar{list: []Mapping{
+		obj := _MappingListFlag{mappings: []Mapping{
 			{Source: "a"},
 			{Source: "m", Target: "n"},
 		}}
@@ -29,23 +29,23 @@ func TestMappingListVar(t *testing.T) {
 	})
 
 	t.Run("Set", func(t *testing.T) {
-		obj := _MappingListVar{sep: "#", allowOne: true}
+		obj := _MappingListFlag{separator: "#", allowOne: true}
 
 		obj.Set("a")
 		assert.Equal(t, []Mapping{
 			{Source: "a"},
-		}, obj.list)
+		}, obj.mappings)
 
 		obj.Set("x#y")
 		assert.Equal(t, []Mapping{
 			{Source: "a"},
 			{Source: "x", Target: "y"},
-		}, obj.list)
+		}, obj.mappings)
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		list := []Mapping{{}, {}}
-		obj := _MappingListVar{list: list}
+		obj := _MappingListFlag{mappings: list}
 
 		assert.Equal(t, list, obj.Get())
 	})
