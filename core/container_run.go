@@ -15,7 +15,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-// Mapping stores key-value pair. Used for volumes, ports, envrionment variables.
+// Mapping stores key-value pair. Used for volumes, ports, environment variables.
 type Mapping struct {
 	Source string
 	Target string
