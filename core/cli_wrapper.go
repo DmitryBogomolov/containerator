@@ -1,3 +1,4 @@
+// Package core contains functions to work with docker containers.
 package core
 
 import (
