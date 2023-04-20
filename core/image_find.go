@@ -100,10 +100,9 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (*types.ImageSumma
 	return nil, ImageNotFoundError{id}
 }
 
-// FindImageByRepoTag searches image by repo tag.
+// FindImageByRepoTag searches image by repo:tag.
 //
-// `repoTag` contains repository and tag separated by ":".
-// If `repoTag` does not contain ":" then ":latest" postfix is added.
+// If tag is not provided then ":latest" is assumed.
 //
 //	FindImageByRepoTag(cli, "my-image:1") -> &image
 func FindImageByRepoTag(cli client.ImageAPIClient, repoTag string) (*types.ImageSummary, error) {
