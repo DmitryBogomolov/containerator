@@ -88,7 +88,7 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image", "4")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, "test-image:4", (err.(core.ImageNotFoundError)).Image(), "error data")
+		assert.Equal(t, "test-image:4", (err.(*core.ImageNotFoundError)).Image(), "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 
@@ -103,7 +103,7 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image-other", "")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, "test-image-other:latest", (err.(core.ImageNotFoundError)).Image(), "error data")
+		assert.Equal(t, "test-image-other:latest", (err.(*core.ImageNotFoundError)).Image(), "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 }

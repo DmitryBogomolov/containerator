@@ -12,8 +12,9 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func updateContainer(options *core.RunContainerOptions, currentContainer *types.Container,
-	cli client.ContainerAPIClient) (container *types.Container, err error) {
+func updateContainer(
+	options *core.RunContainerOptions, currentContainer *types.Container, cli client.ContainerAPIClient,
+) (container *types.Container, err error) {
 	if currentContainer != nil {
 		currentContainerID := currentContainer.ID
 		if err = core.SuspendContainer(cli, currentContainerID); err != nil {
@@ -21,8 +22,7 @@ func updateContainer(options *core.RunContainerOptions, currentContainer *types.
 		}
 		defer func() {
 			if err != nil {
-				otherErr := core.ResumeContainer(cli, currentContainerID, options.Name)
-				if otherErr != nil {
+				if otherErr := core.ResumeContainer(cli, currentContainerID, options.Name); otherErr != nil {
 					err = fmt.Errorf("%v (%v)", err, otherErr)
 				}
 			} else {
@@ -48,34 +48,6 @@ type Options struct {
 // DefaultConfigName defines default name of config file.
 const DefaultConfigName = "config.yaml"
 
-// NoContainerError is returned on attempt to remove container when it is not found.
-type NoContainerError struct {
-	container string
-}
-
-func (err *NoContainerError) Error() string {
-	return fmt.Sprintf("container '%s' is not found", err.container)
-}
-
-// Container returns container name.
-func (err *NoContainerError) Container() string {
-	return err.container
-}
-
-// ContainerAlreadyRunningError is returned on attempt to run container when similar container is already running.
-type ContainerAlreadyRunningError struct {
-	container *types.Container
-}
-
-func (err *ContainerAlreadyRunningError) Error() string {
-	return fmt.Sprintf("container '%s' is already running", core.GetContainerName(err.container))
-}
-
-// Container returns running container.
-func (err *ContainerAlreadyRunningError) Container() *types.Container {
-	return err.container
-}
-
 /*
 Manage runs containers with the last tag for the specified image repo.
 
@@ -97,7 +69,7 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(core.ContainerNotFoundError); !ok {
+		if _, ok := err.(*core.ContainerNotFoundError); !ok {
 			return nil, err
 		}
 		currentContainer = nil

@@ -72,7 +72,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByID / not found", func(t *testing.T) {
 		cont, err := FindContainerByID(cli, "unknown")
 		assert.Error(t, err)
-		contErr, ok := err.(ContainerNotFoundError)
+		contErr, ok := err.(*ContainerNotFoundError)
 		assert.True(t, ok && contErr.Container() == "unknown")
 		assert.Nil(t, cont)
 	})
@@ -86,7 +86,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByShortID / not found", func(t *testing.T) {
 		cont, err := FindContainerByID(cli, "unknown")
 		assert.Error(t, err)
-		contErr, ok := err.(ContainerNotFoundError)
+		contErr, ok := err.(*ContainerNotFoundError)
 		assert.True(t, ok && contErr.Container() == "unknown")
 		assert.Nil(t, cont)
 	})
@@ -100,7 +100,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByName / not found", func(t *testing.T) {
 		cont, err := FindContainerByName(cli, "unknown")
 		assert.Error(t, err)
-		contErr, ok := err.(ContainerNotFoundError)
+		contErr, ok := err.(*ContainerNotFoundError)
 		assert.True(t, ok && contErr.Container() == "unknown")
 		assert.Nil(t, cont)
 	})

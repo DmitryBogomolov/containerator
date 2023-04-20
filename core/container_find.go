@@ -44,7 +44,7 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 			return &containers[i], nil
 		}
 	}
-	return nil, ContainerNotFoundError{id}
+	return nil, &ContainerNotFoundError{id}
 }
 
 // FindContainerByShortID searches container by short id.
@@ -63,7 +63,7 @@ func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Co
 			return &containers[i], nil
 		}
 	}
-	return nil, ContainerNotFoundError{id}
+	return nil, &ContainerNotFoundError{id}
 }
 
 // FindContainerByName searches container by name.
@@ -84,7 +84,7 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 			}
 		}
 	}
-	return nil, ContainerNotFoundError{name}
+	return nil, &ContainerNotFoundError{name}
 }
 
 // FindContainersByImageID searches containers by image id.
