@@ -15,19 +15,15 @@ import (
 )
 
 // RunContainerOptions contains options used to create and start container.
-//
-//`Image` is required, rest are optional.
-//`Env` has priority over `EnvReader`.
-//`EnvReader` expects *yaml*.
 type RunContainerOptions struct {
-	Image         string        `json:"image,omitempty" yaml:",omitempty"`
-	Name          string        `json:"name,omitempty" yaml:",omitempty"`
-	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`
-	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`
-	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`
-	EnvReader     io.Reader     `json:"-" yaml:"-"`
-	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"`
-	Network       string        `json:"network,omitempty" yaml:",omitempty"`
+	Image         string        `json:"image,omitempty" yaml:",omitempty"`          // Image name; required
+	Name          string        `json:"name,omitempty" yaml:",omitempty"`           // Container name
+	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`        // List of volume mappings
+	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`          // List of port mappings
+	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`            // List of environment variables; has priority over `EnvReader`
+	EnvReader     io.Reader     `json:"-" yaml:"-"`                                 // Environment variables in yaml format
+	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"` // Container restart policy
+	Network       string        `json:"network,omitempty" yaml:",omitempty"`        // Container network
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
@@ -90,7 +86,7 @@ Roughly duplicates `docker run` command.
 If created container fails at start it is removed.
 
 	RunContainer(cli, &RunContainerOptions{
-		Image: "my-image:1", // or "sha256:<guid>"
+		Image: "my-image:1",
 		Name: "my-container-1",
 		RestartPolicy: RestartAlways,
 		Network: "my-network-1",
