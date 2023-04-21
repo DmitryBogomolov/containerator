@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
 )
 
@@ -26,33 +26,33 @@ func run() error {
 	}
 
 	if id != "" {
-		container, err := containerator.FindContainerByID(cli, id)
+		container, err := core.FindContainerByID(cli, id)
 		if err != nil {
 			return err
 		}
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
-			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
+			fmt.Printf("Container: %s\n", core.GetContainerName(container))
 		}
 	} else if name != "" {
-		container, err := containerator.FindContainerByName(cli, name)
+		container, err := core.FindContainerByName(cli, name)
 		if err != nil {
 			return err
 		}
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
-			fmt.Printf("Container: %s\n", containerator.GetContainerName(container))
+			fmt.Printf("Container: %s\n", core.GetContainerName(container))
 		}
 	} else if imageID != "" {
-		containers, err := containerator.FindContainersByImageID(cli, imageID)
+		containers, err := core.FindContainersByImageID(cli, imageID)
 		if err != nil {
 			return err
 		}
 		fmt.Println("Containers:")
 		for _, container := range containers {
-			fmt.Printf("  %s\n", containerator.GetContainerName(container))
+			fmt.Printf("  %s\n", core.GetContainerName(container))
 		}
 	} else {
 		flag.Usage()

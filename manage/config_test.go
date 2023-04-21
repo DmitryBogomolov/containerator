@@ -17,7 +17,7 @@ func TestReadConfig(t *testing.T) {
 
 		assert.NoError(t, err, "error")
 		assert.Equal(t, &Config{
-			ImageRepo: "my-image",
+			ImageName: "my-image",
 			Modes:     []string{"a", "b"},
 		}, config, "config")
 	})

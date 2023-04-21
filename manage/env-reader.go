@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 )
 
-func isFileExist(file string) bool {
+func doesFileExist(file string) bool {
 	stat, err := os.Stat(file)
 	return err == nil && !stat.IsDir()
 }
@@ -21,11 +21,11 @@ func getEnvFileName(dir string, mode string) string {
 
 func selectEnvFile(dir string, mode string) string {
 	name := getEnvFileName(dir, mode)
-	if isFileExist(name) {
+	if doesFileExist(name) {
 		return name
 	}
 	name = getEnvFileName(dir, "env")
-	if isFileExist(name) {
+	if doesFileExist(name) {
 		return name
 	}
 	return ""

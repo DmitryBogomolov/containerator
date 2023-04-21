@@ -3,7 +3,7 @@ package manage
 import (
 	"testing"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
@@ -44,17 +44,17 @@ func TestSelectMode(t *testing.T) {
 
 func TestGetContainerName(t *testing.T) {
 	t.Run("Without mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-name"}, "")
+		name := getContainerName(&Config{ImageName: "test-name"}, "")
 		assert.Equal(t, "test-name", name)
 	})
 
 	t.Run("With mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-name"}, "dev")
+		name := getContainerName(&Config{ImageName: "test-name"}, "dev")
 		assert.Equal(t, "test-name-dev", name)
 	})
 
 	t.Run("Prefer container name", func(t *testing.T) {
-		name := getContainerName(&Config{ImageRepo: "test-image", ContainerName: "test-container"}, "m1")
+		name := getContainerName(&Config{ImageName: "test-image", ContainerName: "test-container"}, "m1")
 		assert.Equal(t, "test-container-m1", name)
 	})
 }
@@ -88,7 +88,7 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image", "4")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*containerator.ImageNotFoundError)).Image, "test-image:4", "error data")
+		assert.Equal(t, "test-image:4", (err.(*core.ImageNotFoundError)).Image(), "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 
@@ -103,17 +103,17 @@ func TestFindImage(t *testing.T) {
 		image, err := findImage(cli, "test-image-other", "")
 
 		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*containerator.ImageNotFoundError)).Image, "test-image-other", "error data")
+		assert.Equal(t, "test-image-other:latest", (err.(*core.ImageNotFoundError)).Image(), "error data")
 		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 }
 
 func TestBuildContainerOptions(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		expected := &containerator.RunContainerOptions{
+		expected := &core.RunContainerOptions{
 			Image:         "test-image",
 			Name:          "test-container",
-			RestartPolicy: containerator.RestartAlways,
+			RestartPolicy: core.RestartAlways,
 			Network:       "test-net",
 		}
 		actual := buildContainerOptions(&Config{
@@ -124,12 +124,12 @@ func TestBuildContainerOptions(t *testing.T) {
 	})
 
 	t.Run("With ports", func(t *testing.T) {
-		expected := &containerator.RunContainerOptions{
+		expected := &core.RunContainerOptions{
 			Image:         "test-image",
 			Name:          "test-container",
-			RestartPolicy: containerator.RestartAlways,
+			RestartPolicy: core.RestartAlways,
 			Network:       "test-net",
-			Ports: []containerator.Mapping{
+			Ports: []core.Mapping{
 				{Source: "210", Target: "1"},
 				{Source: "211", Target: "2"},
 			},

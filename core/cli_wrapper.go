@@ -1,4 +1,5 @@
-package containerator
+// Package core contains functions to work with docker containers.
+package core
 
 import (
 	"context"
@@ -8,6 +9,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
+
+//go:generate mockgen -destination ../test_mocks/mock_imageapiclient.go -package test_mocks github.com/docker/docker/client ImageAPIClient
+//go:generate mockgen -destination ../test_mocks/mock_containerapiclient.go -package test_mocks github.com/docker/docker/client ContainerAPIClient
 
 const (
 	contextTimeout = 10 * time.Second

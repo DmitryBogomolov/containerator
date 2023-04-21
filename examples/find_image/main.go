@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
 )
 
@@ -26,34 +26,34 @@ func run() error {
 	}
 
 	if id != "" {
-		image, err := containerator.FindImageByID(cli, id)
+		image, err := core.FindImageByID(cli, id)
 		if err != nil {
 			return err
 		}
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
-			fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
+			fmt.Printf("Image: %s\n", core.GetImageFullName(image))
 		}
 	} else if repoTag != "" {
-		image, err := containerator.FindImageByRepoTag(cli, repoTag)
+		image, err := core.FindImageByRepoTag(cli, repoTag)
 		if err != nil {
 			return err
 		}
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
-			fmt.Printf("Image: %s\n", containerator.GetImageFullName(image))
+			fmt.Printf("Image: %s\n", core.GetImageFullName(image))
 		}
 	} else if repo != "" {
-		images, err := containerator.FindImagesByRepo(cli, repo)
+		images, err := core.FindImagesByRepo(cli, repo)
 		if err != nil {
 			return err
 		}
 		fmt.Println("Images:")
-		tags := containerator.GetImagesTags(images)
+		tags := core.GetImagesTags(images)
 		for i, image := range images {
-			fmt.Printf("  %s %s\n", containerator.GetImageFullName(image), tags[i])
+			fmt.Printf("  %s %s\n", core.GetImageFullName(image), tags[i])
 		}
 	} else {
 		flag.Usage()

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-func findIndex(item string, list []string) int {
+func findIndex[T comparable](item T, list []T) int {
 	for i, obj := range list {
 		if obj == item {
 			return i
@@ -52,7 +52,7 @@ func selectMode(modeOption string, conf *Config) (string, int, error) {
 func getContainerName(conf *Config, mode string) string {
 	name := conf.ContainerName
 	if name == "" {
-		name = conf.ImageRepo
+		name = conf.ImageName
 	}
 	if mode != "" {
 		name += "-" + mode
@@ -60,37 +60,36 @@ func getContainerName(conf *Config, mode string) string {
 	return name
 }
 
-func findImage(cli client.ImageAPIClient, imageRepo string, imageTag string) (*types.ImageSummary, error) {
-	if imageTag != "" {
-		repoTag := imageRepo + ":" + imageTag
-		item, err := containerator.FindImageByRepoTag(cli, repoTag)
-		return item, err
+func findImage(cli client.ImageAPIClient, name string, tag string) (*types.ImageSummary, error) {
+	if tag == "" {
+		list, err := core.FindImagesByRepo(cli, name)
+		if err != nil {
+			return nil, err
+		}
+		if len(list) > 0 {
+			return list[0], nil
+		}
 	}
-	list, err := containerator.FindImagesByRepo(cli, imageRepo)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return nil, &containerator.ImageNotFoundError{Image: imageRepo}
-	}
-	return list[0], nil
+	item, err := core.FindImageByRepoTag(cli, core.JoinImageNameTag(name, tag))
+	return item, err
 }
 
-func buildContainerOptions(conf *Config, imageName string, containerName string,
-	modeIndex int) *containerator.RunContainerOptions {
-	ret := containerator.RunContainerOptions{
+func buildContainerOptions(
+	conf *Config, imageName string, containerName string, modeIndex int,
+) *core.RunContainerOptions {
+	ret := core.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,
-		RestartPolicy: containerator.RestartAlways,
+		RestartPolicy: core.RestartAlways,
 		Network:       conf.Network,
 		Volumes:       conf.Volumes,
 		Env:           conf.Env,
 	}
 	if len(conf.Ports) > 0 {
 		basePort := int(conf.BasePort) + int(conf.PortOffset)*modeIndex
-		ports := make([]containerator.Mapping, len(conf.Ports))
+		ports := make([]core.Mapping, len(conf.Ports))
 		for i, port := range conf.Ports {
-			ports[i] = containerator.Mapping{
+			ports[i] = core.Mapping{
 				Source: strconv.Itoa(basePort + i),
 				Target: strconv.Itoa(int(port)),
 			}

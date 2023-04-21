@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/DmitryBogomolov/containerator"
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
@@ -45,13 +45,13 @@ func run() error {
 		config = &manage.Config{}
 	}
 	if imageRepo != "" {
-		config.ImageRepo = imageRepo
+		config.ImageName = imageRepo
 	}
 	if containerName != "" {
 		config.ContainerName = containerName
 	}
 
-	if config.ImageRepo == "" {
+	if config.ImageName == "" {
 		return errors.New("image repo is not defined")
 	}
 
@@ -91,8 +91,8 @@ func run() error {
 		return err
 	}
 	log.Printf("Container: %s %s\n",
-		containerator.GetContainerName(container),
-		containerator.GetContainerShortID(container))
+		core.GetContainerName(container),
+		core.GetContainerShortID(container))
 
 	return nil
 }

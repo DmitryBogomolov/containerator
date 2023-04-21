@@ -1,16 +1,9 @@
-package containerator
+package core
 
 import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/namesgenerator"
 )
-
-// RemoveContainer removes container.
-//
-//	RemoveContainer(cli, "my-container")
-func RemoveContainer(cli client.ContainerAPIClient, name string) error {
-	return cliContainerRemove(cli, name)
-}
 
 // SuspendContainer renames and stops container.
 //

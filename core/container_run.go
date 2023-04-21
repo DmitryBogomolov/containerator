@@ -1,10 +1,9 @@
-package containerator
+package core
 
 import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -15,86 +14,16 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-// Mapping stores key-value pair. Used for volumes, ports, envrionment variables.
-type Mapping struct {
-	Source string
-	Target string
-}
-
-// MarshalJSON implements `json.Marshaler` interface.
-func (m Mapping) MarshalJSON() ([]byte, error) {
-	str := fmt.Sprintf(`{"%s":"%s"}`, m.Source, m.Target)
-	return []byte(str), nil
-}
-
-// UnmarshalJSON implements `json.Unmarshaler` interface.
-func (m *Mapping) UnmarshalJSON(data []byte) error {
-	str := string(data)
-	str = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(str), "{"), "}")
-	parts := strings.SplitN(str, ":", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("not valid JSON Mapping: %s", data)
-	}
-	m.Source = strings.Trim(strings.TrimSpace(parts[0]), `"`)
-	m.Target = strings.Trim(strings.TrimSpace(parts[1]), `"`)
-	return nil
-}
-
-// MarshalYAML implements `yaml.Marshaler` interface.
-func (m Mapping) MarshalYAML() (interface{}, error) {
-	ret := make(map[string]string)
-	ret[m.Source] = m.Target
-	return ret, nil
-}
-
-// UnmarshalYAML implements `yaml.Unmarshaler` interface.
-func (m *Mapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	tmp := make(map[string]string)
-	err := unmarshal(tmp)
-	if err != nil {
-		return err
-	}
-	for key, val := range tmp {
-		m.Source = key
-		m.Target = val
-		break
-	}
-	return nil
-}
-
-// NewMappingListFromMap creates list of Mapping instances from dictionary.
-func NewMappingListFromMap(data map[string]string) []Mapping {
-	ret := make([]Mapping, 0, len(data))
-	for source, target := range data {
-		ret = append(ret, Mapping{Source: source, Target: target})
-	}
-	return ret
-}
-
-// RestartPolicy defines container restart policy.
-type RestartPolicy string
-
-// RestartPolicy values.
-const (
-	RestartOnFailure     RestartPolicy = "on-failure"
-	RestartUnlessStopped RestartPolicy = "unless-stopped"
-	RestartAlways        RestartPolicy = "always"
-)
-
 // RunContainerOptions contains options used to create and start container.
-//
-//`Image` is required, rest are optional.
-//`Env` has priority over `EnvReader`.
-//`EnvReader` expects *yaml*.
 type RunContainerOptions struct {
-	Image         string        `json:"image,omitempty" yaml:",omitempty"`
-	Name          string        `json:"name,omitempty" yaml:",omitempty"`
-	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`
-	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`
-	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`
-	EnvReader     io.Reader     `json:"-" yaml:"-"`
-	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"`
-	Network       string        `json:"network,omitempty" yaml:",omitempty"`
+	Image         string        `json:"image,omitempty" yaml:",omitempty"`          // Image name; required
+	Name          string        `json:"name,omitempty" yaml:",omitempty"`           // Container name
+	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`        // List of volume mappings
+	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`          // List of port mappings
+	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`            // List of environment variables; has priority over `EnvReader`
+	EnvReader     io.Reader     `json:"-" yaml:"-"`                                 // Environment variables in yaml format
+	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"` // Container restart policy
+	Network       string        `json:"network,omitempty" yaml:",omitempty"`        // Container network
 }
 
 func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
@@ -157,7 +86,7 @@ Roughly duplicates `docker run` command.
 If created container fails at start it is removed.
 
 	RunContainer(cli, &RunContainerOptions{
-		Image: "my-image:1", // or "sha256:<guid>"
+		Image: "my-image:1",
 		Name: "my-container-1",
 		RestartPolicy: RestartAlways,
 		Network: "my-network-1",

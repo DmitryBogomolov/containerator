@@ -1,4 +1,4 @@
-package containerator
+package core_test
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -376,15 +377,4 @@ func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
 		Name:  "container-1",
 		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
 	}, options)
-}
-
-func TestNewMappingListFromMap(t *testing.T) {
-	ret := NewMappingListFromMap(map[string]string{
-		"a": "1",
-		"b": "2",
-		"c": "3",
-		"d": "4",
-	})
-
-	assert.Equal(t, 4, len(ret))
 }

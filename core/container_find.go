@@ -1,7 +1,6 @@
-package containerator
+package core
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -28,20 +27,6 @@ func GetContainerName(container *types.Container) string {
 //	GetContainerShortID(&container) -> "12345678abcd"
 func GetContainerShortID(container *types.Container) string {
 	return container.ID[:shortIDLength]
-}
-
-// ContainerNotFoundError indicates that container with specified ID or name is not found.
-type ContainerNotFoundError struct {
-	container string
-}
-
-func (err *ContainerNotFoundError) Error() string {
-	return fmt.Sprintf("container '%s' is not found", err.container)
-}
-
-// Container returns container ID or name.
-func (err *ContainerNotFoundError) Container() string {
-	return err.container
 }
 
 // FindContainerByID searches container by id.

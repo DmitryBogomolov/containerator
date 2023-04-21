@@ -1,10 +1,11 @@
-package containerator
+package core_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/golang/mock/gomock"
@@ -101,7 +102,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByID(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.True(t, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
 
@@ -115,7 +116,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByShortID(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.True(t, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
 
@@ -135,7 +136,7 @@ func TestFindImage(t *testing.T) {
 		image, err := FindImageByRepoTag(cli, "unknown")
 		assert.Error(t, err)
 		imageErr, ok := err.(*ImageNotFoundError)
-		assert.True(t, ok && imageErr.Image == "unknown")
+		assert.True(t, ok && imageErr.Image() == "unknown")
 		assert.Nil(t, image)
 	})
 
