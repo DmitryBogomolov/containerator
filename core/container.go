@@ -10,6 +10,7 @@ const (
 	containerShortIDLength = 12
 )
 
+// Container provides information about container.
 type Container interface {
 	ID() string
 	ShortID() string

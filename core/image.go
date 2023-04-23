@@ -12,6 +12,7 @@ const (
 	imageShortIDLength = 12
 )
 
+// Image provides information about image.
 type Image interface {
 	ID() string
 	ShortID() string
