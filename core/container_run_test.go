@@ -46,7 +46,7 @@ func TestRunContainer(t *testing.T) {
 		})
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedContainer.ID, cont.ID)
+		assert.Equal(t, expectedContainer.ID, cont.ID())
 	})
 
 	t.Run("RemoveNonStarted", func(t *testing.T) {

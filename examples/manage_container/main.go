@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
@@ -90,9 +89,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Container: %s %s\n",
-		core.GetContainerName(container),
-		core.GetContainerShortID(container))
+	log.Printf("Container: %s %s\n", container.Name(), container.ShortID())
 
 	return nil
 }

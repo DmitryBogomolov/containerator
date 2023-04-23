@@ -7,7 +7,6 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -101,7 +100,7 @@ If created container fails at start it is removed.
 		},
 	}) -> &container
 */
-func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (*types.Container, error) {
+func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (Container, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 

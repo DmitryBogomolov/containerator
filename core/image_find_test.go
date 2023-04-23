@@ -87,7 +87,11 @@ func TestFindImage(t *testing.T) {
 	t.Run("ByRepo", func(t *testing.T) {
 		images, err := FindAllImagesByName(cli, "test")
 		assert.NoError(t, err)
-		expected := []Image{makeImage(&testImages[0]), makeImage(&testImages[2]), makeImage(&testImages[3])}
+		expected := []Image{
+			makeImage(&testImages[0]),
+			makeImage(&testImages[2]),
+			makeImage(&testImages[3]),
+		}
 		assert.Equal(t, expected, images)
 	})
 

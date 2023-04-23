@@ -6,25 +6,23 @@ import (
 	"io"
 
 	"github.com/DmitryBogomolov/containerator/core"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
 func updateContainer(
-	options *core.RunContainerOptions, currentContainer *types.Container, cli client.ContainerAPIClient,
-) (container *types.Container, err error) {
+	options *core.RunContainerOptions, currentContainer core.Container, cli client.ContainerAPIClient,
+) (container core.Container, err error) {
 	if currentContainer != nil {
-		currentContainerID := currentContainer.ID
-		if err = core.SuspendContainer(cli, currentContainerID); err != nil {
+		if err = core.SuspendContainer(cli, currentContainer.ID()); err != nil {
 			return
 		}
 		defer func() {
 			if err != nil {
-				if otherErr := core.ResumeContainer(cli, currentContainerID, options.Name); otherErr != nil {
+				if otherErr := core.ResumeContainer(cli, currentContainer.ID(), options.Name); otherErr != nil {
 					err = fmt.Errorf("%v (%v)", err, otherErr)
 				}
 			} else {
-				err = core.RemoveContainer(cli, currentContainerID)
+				err = core.RemoveContainer(cli, currentContainer.ID())
 			}
 		}()
 	}
@@ -47,7 +45,7 @@ const DefaultConfigName = "config.yaml"
 // Manage runs containers with the last tag for the specified image repo.
 //
 //	Manage(cli, "/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
-func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, error) {
+func Manage(cli interface{}, cfg *Config, options *Options) (core.Container, error) {
 	mode, modeIndex, err := selectMode(options.Mode, cfg)
 	if err != nil {
 		return nil, err
@@ -68,7 +66,7 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 		if currentContainer == nil {
 			return nil, &NoContainerError{containerName}
 		}
-		if err = core.RemoveContainer(containerCli, currentContainer.ID); err != nil {
+		if err = core.RemoveContainer(containerCli, currentContainer.ID()); err != nil {
 			return nil, err
 		}
 		return currentContainer, nil
@@ -83,8 +81,8 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 		return nil, err
 	}
 
-	if currentContainer != nil && currentContainer.ImageID == image.ID() && !options.Force {
-		return nil, &ContainerAlreadyRunningError{currentContainer}
+	if currentContainer != nil && currentContainer.ImageID() == image.ID() && !options.Force {
+		return nil, &ContainerAlreadyRunningError{currentContainer.Name()}
 	}
 
 	runOptions := buildContainerOptions(cfg, image.FullName(), containerName, modeIndex)

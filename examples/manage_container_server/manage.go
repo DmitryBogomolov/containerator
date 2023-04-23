@@ -11,7 +11,6 @@ import (
 	"github.com/DmitryBogomolov/containerator/core"
 
 	"github.com/DmitryBogomolov/containerator/manage"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
@@ -20,8 +19,8 @@ func parseBool(value string) bool {
 	return ret
 }
 
-func getTag(cli client.ImageAPIClient, cont *types.Container) string {
-	image, err := core.FindImageByID(cli, cont.ImageID)
+func getTag(cli client.ImageAPIClient, cont core.Container) string {
+	image, err := core.FindImageByID(cli, cont.ImageID())
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
 	}
@@ -76,7 +75,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 		return nil, err
 	}
 	return map[string]string{
-		"name":  core.GetContainerName(cont),
+		"name":  cont.Name(),
 		"image": config.ImageName,
 		"tag":   getTag(cli.(client.ImageAPIClient), cont),
 	}, nil

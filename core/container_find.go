@@ -7,41 +7,19 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// GetContainerName returns container name.
-//
-// Takes first of container names and trims leading  "/" character.
-//
-//	GetContainerName(&container) -> "my-container"
-func GetContainerName(container *types.Container) string {
-	if len(container.Names) > 0 {
-		return container.Names[0][1:]
-	}
-	return ""
-}
-
-// GetContainerShortID return short variant of container id.
-//
-// Takes first 12 characters of identifier.
-// Produces same value as the first columns of `docker ps` output.
-//
-//	GetContainerShortID(&container) -> "12345678abcd"
-func GetContainerShortID(container *types.Container) string {
-	return container.ID[:imageShortIDLength]
-}
-
 // FindContainerByID searches container by id.
 //
 // `id` is a full (64 characters) identifier.
 //
-//	FindContainerByID(cli, "<guid>") -> &container
-func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
+//	FindContainerByID(cli, "<guid>") -> container
+func FindContainerByID(cli client.ContainerAPIClient, id string) (Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
 		return nil, err
 	}
 	for i, container := range containers {
 		if container.ID == id {
-			return &containers[i], nil
+			return makeContainer(&containers[i]), nil
 		}
 	}
 	return nil, &ContainerNotFoundError{id}
@@ -52,15 +30,15 @@ func FindContainerByID(cli client.ContainerAPIClient, id string) (*types.Contain
 // Uses `strings.HasPrefix` to compare container identifiers.
 // Any substring of actual identifier can be passed.
 //
-//	FindContainerByShortID(cli, "1234") -> &container
-func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Container, error) {
+//	FindContainerByShortID(cli, "1234") -> container
+func FindContainerByShortID(cli client.ContainerAPIClient, id string) (Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
 		return nil, err
 	}
 	for i, container := range containers {
 		if strings.HasPrefix(container.ID, id) {
-			return &containers[i], nil
+			return makeContainer(&containers[i]), nil
 		}
 	}
 	return nil, &ContainerNotFoundError{id}
@@ -70,17 +48,17 @@ func FindContainerByShortID(cli client.ContainerAPIClient, id string) (*types.Co
 //
 // Adds leading "/" character to passed value.
 //
-//	FindContainerByName(cli, "my-container") -> &container
-func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Container, error) {
+//	FindContainerByName(cli, "my-container") -> container
+func FindContainerByName(cli client.ContainerAPIClient, name string) (Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
 		return nil, err
 	}
-	val := "/" + name
+	targetName := "/" + name
 	for i, container := range containers {
-		for _, item := range container.Names {
-			if item == val {
-				return &containers[i], nil
+		for _, name := range container.Names {
+			if name == targetName {
+				return makeContainer(&containers[i]), nil
 			}
 		}
 	}
@@ -91,17 +69,17 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (*types.Con
 //
 // `imageID` is a full image identifier - 64 characters with leading "sha256:".
 //
-//	FindContainersByImageID(cli, "sha256:<guid>") -> &container
-func FindContainersByImageID(cli client.ContainerAPIClient, imageID string) ([]*types.Container, error) {
+//	FindContainersByImageID(cli, "sha256:<guid>") -> container
+func FindContainersByImageID(cli client.ContainerAPIClient, imageID string) ([]Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
 		return nil, err
 	}
-	var ret []*types.Container
+	var objects []*types.Container
 	for i, container := range containers {
 		if container.ImageID == imageID {
-			ret = append(ret, &containers[i])
+			objects = append(objects, &containers[i])
 		}
 	}
-	return ret, nil
+	return TransformSlice(objects, makeContainer), nil
 }

@@ -54,11 +54,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s %s\n",
-		imageName,
-		core.GetContainerShortID(container),
-		core.GetContainerName(container),
-		container.State)
+	fmt.Printf("%s %s %s %s\n", imageName, container.ShortID(), container.Name(), container.State())
 
 	return nil
 }
