@@ -5,8 +5,6 @@ import (
 )
 
 // RemoveContainer removes container.
-//
-//	RemoveContainer(cli, "my-container")
-func RemoveContainer(cli client.ContainerAPIClient, name string) error {
-	return cliContainerRemove(cli, name)
+func RemoveContainer(cli client.ContainerAPIClient, container Container) error {
+	return cliContainerRemove(cli, container.ID())
 }

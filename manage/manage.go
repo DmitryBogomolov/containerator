@@ -13,16 +13,16 @@ func updateContainer(
 	options *core.RunContainerOptions, currentContainer core.Container, cli client.ContainerAPIClient,
 ) (container core.Container, err error) {
 	if currentContainer != nil {
-		if err = core.SuspendContainer(cli, currentContainer.ID()); err != nil {
+		if err = core.SuspendContainer(cli, currentContainer); err != nil {
 			return
 		}
 		defer func() {
 			if err != nil {
-				if otherErr := core.ResumeContainer(cli, currentContainer.ID(), options.Name); otherErr != nil {
+				if otherErr := core.ResumeContainer(cli, currentContainer, options.Name); otherErr != nil {
 					err = fmt.Errorf("%v (%v)", err, otherErr)
 				}
 			} else {
-				err = core.RemoveContainer(cli, currentContainer.ID())
+				err = core.RemoveContainer(cli, currentContainer)
 			}
 		}()
 	}
@@ -66,7 +66,7 @@ func Manage(cli interface{}, cfg *Config, options *Options) (core.Container, err
 		if currentContainer == nil {
 			return nil, &NoContainerError{containerName}
 		}
-		if err = core.RemoveContainer(containerCli, currentContainer.ID()); err != nil {
+		if err = core.RemoveContainer(containerCli, currentContainer); err != nil {
 			return nil, err
 		}
 		return currentContainer, nil
