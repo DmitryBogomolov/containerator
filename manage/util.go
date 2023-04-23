@@ -5,8 +5,6 @@ import (
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 )
 
 func findIndex[T comparable](item T, list []T) int {
@@ -58,20 +56,6 @@ func getContainerName(conf *Config, mode string) string {
 		name += "-" + mode
 	}
 	return name
-}
-
-func findImage(cli client.ImageAPIClient, name string, tag string) (*types.ImageSummary, error) {
-	if tag == "" {
-		list, err := core.FindImagesByRepo(cli, name)
-		if err != nil {
-			return nil, err
-		}
-		if len(list) > 0 {
-			return list[0], nil
-		}
-	}
-	item, err := core.FindImageByRepoTag(cli, core.JoinImageNameTag(name, tag))
-	return item, err
 }
 
 func buildContainerOptions(

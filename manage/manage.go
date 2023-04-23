@@ -74,17 +74,20 @@ func Manage(cli interface{}, cfg *Config, options *Options) (*types.Container, e
 		return currentContainer, nil
 	}
 
-	image, err := findImage(cli.(client.ImageAPIClient), cfg.ImageName, options.Tag)
+	imageName := cfg.ImageName
+	if options.Tag != "" {
+		imageName += ":" + options.Tag
+	}
+	image, err := core.FindImageByName(cli.(client.ImageAPIClient), cfg.ImageName)
 	if err != nil {
 		return nil, err
 	}
-	imageName := core.GetImageFullName(image)
 
-	if currentContainer != nil && currentContainer.ImageID == image.ID && !options.Force {
+	if currentContainer != nil && currentContainer.ImageID == image.ID() && !options.Force {
 		return nil, &ContainerAlreadyRunningError{currentContainer}
 	}
 
-	runOptions := buildContainerOptions(cfg, imageName, containerName, modeIndex)
+	runOptions := buildContainerOptions(cfg, image.FullName(), containerName, modeIndex)
 	if options.GetEnvReader != nil {
 		reader, err := options.GetEnvReader(mode)
 		if err != nil {

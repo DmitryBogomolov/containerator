@@ -5,9 +5,6 @@ import (
 
 	"github.com/DmitryBogomolov/containerator/core"
 
-	"github.com/DmitryBogomolov/containerator/test_mocks"
-	"github.com/docker/docker/api/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,55 +53,6 @@ func TestGetContainerName(t *testing.T) {
 	t.Run("Prefer container name", func(t *testing.T) {
 		name := getContainerName(&Config{ImageName: "test-image", ContainerName: "test-container"}, "m1")
 		assert.Equal(t, "test-container-m1", name)
-	})
-}
-
-func TestFindImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	testImages := []types.ImageSummary{
-		{
-			RepoTags: []string{"test-image:1"},
-		},
-		{
-			RepoTags: []string{"test-image:2"},
-		},
-		{
-			RepoTags: []string{"test-image:3"},
-		},
-	}
-	cli := test_mocks.NewMockImageAPIClient(ctrl)
-	cli.EXPECT().ImageList(gomock.Any(), gomock.Any()).Return(testImages, nil).AnyTimes()
-
-	t.Run("With tag", func(t *testing.T) {
-		image, err := findImage(cli, "test-image", "2")
-
-		assert.NoError(t, err, "error")
-		assert.Equal(t, &testImages[1], image, "image")
-	})
-
-	t.Run("With tag - not found", func(t *testing.T) {
-		image, err := findImage(cli, "test-image", "4")
-
-		assert.Error(t, err, "error")
-		assert.Equal(t, "test-image:4", (err.(*core.ImageNotFoundError)).Image(), "error data")
-		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
-	})
-
-	t.Run("Without tag", func(t *testing.T) {
-		image, err := findImage(cli, "test-image", "")
-
-		assert.NoError(t, err, "error")
-		assert.Equal(t, &testImages[0], image, "image")
-	})
-
-	t.Run("Without tag - not found", func(t *testing.T) {
-		image, err := findImage(cli, "test-image-other", "")
-
-		assert.Error(t, err, "error")
-		assert.Equal(t, "test-image-other:latest", (err.(*core.ImageNotFoundError)).Image(), "error data")
-		assert.Equal(t, (*types.ImageSummary)(nil), image, "image")
 	})
 }
 

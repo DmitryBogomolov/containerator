@@ -33,27 +33,29 @@ func run() error {
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
-			fmt.Printf("Image: %s\n", core.GetImageFullName(image))
+			fmt.Printf("Image: %s\n", image.FullName())
 		}
 	} else if repoTag != "" {
-		image, err := core.FindImageByRepoTag(cli, repoTag)
+		image, err := core.FindImageByName(cli, repoTag)
 		if err != nil {
 			return err
 		}
 		if image == nil {
 			fmt.Println("Image is not found.")
 		} else {
-			fmt.Printf("Image: %s\n", core.GetImageFullName(image))
+			fmt.Printf("Image: %s\n", image.FullName())
 		}
 	} else if repo != "" {
-		images, err := core.FindImagesByRepo(cli, repo)
+		images, err := core.FindAllImagesByName(cli, repo)
 		if err != nil {
 			return err
 		}
 		fmt.Println("Images:")
-		tags := core.GetImagesTags(images)
+		tags := core.TransformSlice(images, func(image core.Image) string {
+			return image.Tag()
+		})
 		for i, image := range images {
-			fmt.Printf("  %s %s\n", core.GetImageFullName(image), tags[i])
+			fmt.Printf("  %s %s\n", image.FullName(), tags[i])
 		}
 	} else {
 		flag.Usage()

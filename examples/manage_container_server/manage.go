@@ -25,8 +25,7 @@ func getTag(cli client.ImageAPIClient, cont *types.Container) string {
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
 	}
-	_, tag := core.SplitImageNameTag(core.GetImageFullName(image))
-	return tag
+	return image.Tag()
 }
 
 func parseRequestBody(body io.ReadCloser) *manage.Options {
@@ -88,12 +87,14 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
-	images, err := core.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageName)
+	images, err := core.FindAllImagesByName(cli.(client.ImageAPIClient), config.ImageName)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"modes": config.Modes,
-		"tags":  core.GetImagesTags(images),
+		"tags": core.TransformSlice(images, func(image core.Image) string {
+			return image.Tag()
+		}),
 	}, nil
 }

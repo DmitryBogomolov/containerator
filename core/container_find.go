@@ -26,7 +26,7 @@ func GetContainerName(container *types.Container) string {
 //
 //	GetContainerShortID(&container) -> "12345678abcd"
 func GetContainerShortID(container *types.Container) string {
-	return container.ID[:shortIDLength]
+	return container.ID[:imageShortIDLength]
 }
 
 // FindContainerByID searches container by id.
