@@ -66,7 +66,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	options.GetEnvFilePath = func(mode string) string {
 		return filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", mode))
 	}
-	cont, err := manage.Manage(cli, config, options)
+	cont, err := manage.RunContainer(cli, config, options)
 	if err != nil {
 		return nil, err
 	}

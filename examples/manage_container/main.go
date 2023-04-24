@@ -63,7 +63,7 @@ func run() error {
 			return filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", mode))
 		},
 	}
-	container, err := manage.Manage(cli, config, options)
+	container, err := manage.RunContainer(cli, config, options)
 
 	if options.Remove {
 		if _, ok := err.(*manage.NoContainerError); ok {

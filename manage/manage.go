@@ -42,10 +42,10 @@ type Options struct {
 // DefaultConfigName defines default name of config file.
 const DefaultConfigName = "config.yaml"
 
-// Manage runs containers with the last tag for the specified image repo.
+// RunContainer runs container with the last tag for the specified image.
 //
-//	Manage(cli, "/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
-func Manage(cli interface{}, cfg *Config, options *Options) (core.Container, error) {
+//	RunContainer(cli, "/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
+func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Container, error) {
 	mode, modeIndex, err := selectMode(options.Mode, cfg)
 	if err != nil {
 		return nil, err
