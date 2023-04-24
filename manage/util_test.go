@@ -13,7 +13,7 @@ func TestSelectMode(t *testing.T) {
 		Modes: []string{"m1", "m2", "m3"},
 	}
 
-	t.Run("Unknonwn mode", func(t *testing.T) {
+	t.Run("Unknown mode", func(t *testing.T) {
 		mode, i, err := selectMode("m4", conf)
 
 		assert.Error(t, err, "error")

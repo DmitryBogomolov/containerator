@@ -4,7 +4,7 @@ package main
 import (
 	"errors"
 	"flag"
-	"io"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -59,12 +59,8 @@ func run() error {
 		Tag:    tagOption,
 		Force:  forceOption,
 		Remove: removeOption,
-		GetEnvReader: func(mode string) (io.Reader, error) {
-			reader, err := manage.GetEnvFileReader(filepath.Dir(configPathOption), mode)
-			if err != nil {
-				log.Printf("Failed to load env file: %v\n", err)
-			}
-			return reader, nil
+		GetEnvFilePath: func(mode string) string {
+			return filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", mode))
 		},
 	}
 	container, err := manage.Manage(cli, config, options)

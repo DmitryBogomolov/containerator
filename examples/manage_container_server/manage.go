@@ -63,12 +63,8 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	options.GetEnvReader = func(mode string) (io.Reader, error) {
-		reader, err := manage.GetEnvFileReader(filepath.Dir(configPath), mode)
-		if err != nil {
-			logger.Printf("failed to read env for '%s' (%+v)", configPath, err)
-		}
-		return reader, nil
+	options.GetEnvFilePath = func(mode string) string {
+		return filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", mode))
 	}
 	cont, err := manage.Manage(cli, config, options)
 	if err != nil {

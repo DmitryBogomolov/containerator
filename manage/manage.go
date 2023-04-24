@@ -3,7 +3,6 @@ package manage
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
@@ -33,11 +32,11 @@ func updateContainer(
 
 // Options contains additional arguments for Manage function.
 type Options struct {
-	Mode         string // If set should match one of modes in config
-	Tag          string // Image tag; if not set newest image is selected
-	Force        bool   // If set running container is replaced
-	Remove       bool   // If set running container is removed
-	GetEnvReader func(string) (io.Reader, error)
+	Mode           string // If set should match one of modes in config
+	Tag            string // Image tag; if not set newest image is selected
+	Force          bool   // If set running container is replaced
+	Remove         bool   // If set running container is removed
+	GetEnvFilePath func(string) string
 }
 
 // DefaultConfigName defines default name of config file.
@@ -87,12 +86,9 @@ func Manage(cli interface{}, cfg *Config, options *Options) (core.Container, err
 	}
 
 	runOptions := buildContainerOptions(cfg, image.FullName(), containerName, modeIndex)
-	if options.GetEnvReader != nil {
-		reader, err := options.GetEnvReader(mode)
-		if err != nil {
-			return nil, err
-		}
-		data, err := godotenv.Parse(reader)
+	if options.GetEnvFilePath != nil {
+		filePath := options.GetEnvFilePath(mode)
+		data, err := godotenv.Read(filePath)
 		if err != nil {
 			return nil, err
 		}
