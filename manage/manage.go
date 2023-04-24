@@ -32,11 +32,11 @@ func updateContainer(
 
 // Options contains additional arguments for Manage function.
 type Options struct {
-	Mode           string // If set should match one of modes in config
-	Tag            string // Image tag; if not set newest image is selected
-	Force          bool   // If set running container is replaced
-	Remove         bool   // If set running container is removed
-	GetEnvFilePath func(string) string
+	Mode        string // If set should match one of modes in config
+	Tag         string // Image tag; if not set newest image is selected
+	Force       bool   // If set running container is replaced
+	Remove      bool   // If set running container is removed
+	EnvFilePath string // Path to env file
 }
 
 // DefaultConfigName defines default name of config file.
@@ -86,9 +86,8 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 	}
 
 	runOptions := buildContainerOptions(cfg, image.FullName(), containerName, modeIndex)
-	if options.GetEnvFilePath != nil {
-		filePath := options.GetEnvFilePath(mode)
-		data, err := godotenv.Read(filePath)
+	if options.EnvFilePath != "" {
+		data, err := godotenv.Read(options.EnvFilePath)
 		if err != nil {
 			return nil, err
 		}

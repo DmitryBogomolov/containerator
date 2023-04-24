@@ -55,13 +55,11 @@ func run() error {
 	}
 
 	options := &manage.Options{
-		Mode:   modeOption,
-		Tag:    tagOption,
-		Force:  forceOption,
-		Remove: removeOption,
-		GetEnvFilePath: func(mode string) string {
-			return filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", mode))
-		},
+		Mode:        modeOption,
+		Tag:         tagOption,
+		Force:       forceOption,
+		Remove:      removeOption,
+		EnvFilePath: filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", modeOption)),
 	}
 	container, err := manage.RunContainer(cli, config, options)
 

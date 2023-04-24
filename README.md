@@ -63,23 +63,17 @@ config = &manage.Config{
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "dev"
 	Tag: "latest",
-	GetEnvFilePath: func(mode string) string {
-        return fmt.Sprintf("./env.%s.list", mode)
-    },
+	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
 })
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "test"
 	Tag: "latest",
-	GetEnvFilePath: func(mode string) string {
-        return fmt.Sprintf("./env.%s.list", mode)
-    },
+	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
 })
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "prod"
 	Tag: "2",
-	GetEnvFilePath: func(mode string) string {
-        return fmt.Sprintf("./env.%s.list", mode)
-    },
+	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
 })
 ```
 
