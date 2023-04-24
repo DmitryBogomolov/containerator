@@ -4,7 +4,7 @@
 
 ## core
 
-Helper functions to work with docker containers.
+Functions to work with docker containers.
 
 Several most common and basic operations are supported.
 
@@ -44,9 +44,46 @@ core.RunContainer(cli, &core.RunContainerOptions{
 
 ## manage
 
-Contains function to run, suspend, resume, remove containers.
+Functions to run, suspend, resume, remove containers.
 
-### Examples
+```go
+// import "github.com/docker/docker/client"
+cli, _ = client.NewEnvClient()
+
+config = &manage.Config{
+	ImageName: "my-umage",
+	ContainerName: "my-container",
+    Modes: []string{
+        "dev",
+        "test",
+        "prod",
+    },
+}
+
+manage.RunContainer(cli, config, &manage.Options{
+    Mode: "dev"
+	Tag: "latest",
+	GetEnvFilePath: func(mode string) string {
+        return fmt.Sprintf("./env.%s.list", mode)
+    },
+})
+manage.RunContainer(cli, config, &manage.Options{
+    Mode: "test"
+	Tag: "latest",
+	GetEnvFilePath: func(mode string) string {
+        return fmt.Sprintf("./env.%s.list", mode)
+    },
+})
+manage.RunContainer(cli, config, &manage.Options{
+    Mode: "prod"
+	Tag: "2",
+	GetEnvFilePath: func(mode string) string {
+        return fmt.Sprintf("./env.%s.list", mode)
+    },
+})
+```
+
+## Examples
 
 - [find_image](./examples/find_image/README.md)
 - [find_container](./examples/find_container/README.md)
