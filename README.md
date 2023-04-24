@@ -63,17 +63,17 @@ config = &manage.Config{
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "dev"
 	Tag: "latest",
-	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
+	EnvFilePath: "./env-dev.list",
 })
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "test"
 	Tag: "latest",
-	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
+	EnvFilePath: "./env-test.list",
 })
 manage.RunContainer(cli, config, &manage.Options{
     Mode: "prod"
 	Tag: "2",
-	EnvFilePath: fmt.Sprintf("./env.%s.list", mode),
+	EnvFilePath: "./env-prod.list",
 })
 ```
 
