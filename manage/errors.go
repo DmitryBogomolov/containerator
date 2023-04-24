@@ -2,9 +2,6 @@ package manage
 
 import (
 	"fmt"
-
-	"github.com/DmitryBogomolov/containerator/core"
-	"github.com/docker/docker/api/types"
 )
 
 // NoContainerError is returned on attempt to remove container when it is not found.
@@ -23,14 +20,14 @@ func (err NoContainerError) Container() string {
 
 // ContainerAlreadyRunningError is returned on attempt to run container when similar container is already running.
 type ContainerAlreadyRunningError struct {
-	container *types.Container
+	container string
 }
 
 func (err ContainerAlreadyRunningError) Error() string {
-	return fmt.Sprintf("container '%s' is already running", core.GetContainerName(err.container))
+	return fmt.Sprintf("container '%s' is already running", err.container)
 }
 
 // Container returns running container.
-func (err ContainerAlreadyRunningError) Container() *types.Container {
+func (err ContainerAlreadyRunningError) Container() string {
 	return err.container
 }

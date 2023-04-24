@@ -1,32 +1,14 @@
-package core_test
+package core
 
 import (
 	"testing"
 
-	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/docker/docker/api/types"
 	"github.com/golang/mock/gomock"
 )
-
-func TestGetContainerName(t *testing.T) {
-	t.Run("Empty name", func(t *testing.T) {
-		name := GetContainerName(&types.Container{Names: []string{}})
-		assert.Equal(t, "", name)
-	})
-
-	t.Run("First name", func(t *testing.T) {
-		name := GetContainerName(&types.Container{Names: []string{"/c1", "/c2"}})
-		assert.Equal(t, "c1", name)
-	})
-}
-
-func TestGetContainerShortID(t *testing.T) {
-	id := GetContainerShortID(&types.Container{ID: "01234567890123456789"})
-	assert.Equal(t, "012345678901", id)
-}
 
 func TestFindContainer(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -66,7 +48,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByID", func(t *testing.T) {
 		cont, err := FindContainerByID(cli, "22334455667788990011")
 		assert.NoError(t, err)
-		assert.Equal(t, &testContainers[2], cont)
+		assert.Equal(t, makeContainer(&testContainers[2]), cont)
 	})
 
 	t.Run("ByID / not found", func(t *testing.T) {
@@ -80,7 +62,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByShortID", func(t *testing.T) {
 		cont, err := FindContainerByShortID(cli, "3344")
 		assert.NoError(t, err)
-		assert.Equal(t, &testContainers[3], cont)
+		assert.Equal(t, makeContainer(&testContainers[3]), cont)
 	})
 
 	t.Run("ByShortID / not found", func(t *testing.T) {
@@ -94,7 +76,7 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByName", func(t *testing.T) {
 		cont, err := FindContainerByName(cli, "tester-1")
 		assert.NoError(t, err)
-		assert.Equal(t, &testContainers[0], cont)
+		assert.Equal(t, makeContainer(&testContainers[0]), cont)
 	})
 
 	t.Run("ByName / not found", func(t *testing.T) {
@@ -108,14 +90,17 @@ func TestFindContainer(t *testing.T) {
 	t.Run("ByImageID", func(t *testing.T) {
 		conts, err := FindContainersByImageID(cli, "i2")
 		assert.NoError(t, err)
-		expected := []*types.Container{&testContainers[1], &testContainers[2], &testContainers[4]}
+		expected := []Container{
+			makeContainer(&testContainers[1]),
+			makeContainer(&testContainers[2]),
+			makeContainer(&testContainers[4]),
+		}
 		assert.Equal(t, expected, conts)
 	})
 
 	t.Run("ByImageID / not found", func(t *testing.T) {
 		conts, err := FindContainersByImageID(cli, "unknown")
 		assert.NoError(t, err)
-		var expected []*types.Container
-		assert.Equal(t, expected, conts)
+		assert.Equal(t, []Container(nil), conts)
 	})
 }

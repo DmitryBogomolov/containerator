@@ -4,12 +4,11 @@ package main
 import (
 	"errors"
 	"flag"
-	"io"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
@@ -21,8 +20,8 @@ func run() error {
 	flag.StringVar(&imageRepo, "image", "", "image repo")
 	var containerName string
 	flag.StringVar(&containerName, "container", "", "container name")
-	var modeOption string
-	flag.StringVar(&modeOption, "mode", "", "mode")
+	var postfixOption string
+	flag.StringVar(&postfixOption, "postfix", "", "postfix")
 	var tagOption string
 	flag.StringVar(&tagOption, "tag", "", "image tag")
 	var removeOption bool
@@ -56,19 +55,13 @@ func run() error {
 	}
 
 	options := &manage.Options{
-		Mode:   modeOption,
-		Tag:    tagOption,
-		Force:  forceOption,
-		Remove: removeOption,
-		GetEnvReader: func(mode string) (io.Reader, error) {
-			reader, err := manage.GetEnvFileReader(filepath.Dir(configPathOption), mode)
-			if err != nil {
-				log.Printf("Failed to load env file: %v\n", err)
-			}
-			return reader, nil
-		},
+		Postfix:     postfixOption,
+		Tag:         tagOption,
+		Force:       forceOption,
+		Remove:      removeOption,
+		EnvFilePath: filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", postfixOption)),
 	}
-	container, err := manage.Manage(cli, config, options)
+	container, err := manage.RunContainer(cli, config, options)
 
 	if options.Remove {
 		if _, ok := err.(*manage.NoContainerError); ok {
@@ -90,9 +83,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Container: %s %s\n",
-		core.GetContainerName(container),
-		core.GetContainerShortID(container))
+	log.Printf("Container: %s %s\n", container.Name(), container.ShortID())
 
 	return nil
 }

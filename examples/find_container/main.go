@@ -33,7 +33,7 @@ func run() error {
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
-			fmt.Printf("Container: %s\n", core.GetContainerName(container))
+			fmt.Printf("Container: %s\n", container.Name())
 		}
 	} else if name != "" {
 		container, err := core.FindContainerByName(cli, name)
@@ -43,7 +43,7 @@ func run() error {
 		if container == nil {
 			fmt.Println("Container is not found.")
 		} else {
-			fmt.Printf("Container: %s\n", core.GetContainerName(container))
+			fmt.Printf("Container: %s\n", container.Name())
 		}
 	} else if imageID != "" {
 		containers, err := core.FindContainersByImageID(cli, imageID)
@@ -52,7 +52,7 @@ func run() error {
 		}
 		fmt.Println("Containers:")
 		for _, container := range containers {
-			fmt.Printf("  %s\n", core.GetContainerName(container))
+			fmt.Printf("  %s\n", container.Name())
 		}
 	} else {
 		flag.Usage()

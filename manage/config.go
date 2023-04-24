@@ -9,15 +9,12 @@ import (
 
 // Config contains options for container management.
 type Config struct {
-	ImageName     string         `yaml:"image_repo"`     // Image name; required
-	ContainerName string         `yaml:"container_name"` // Container name
-	Network       string         `yaml:"network"`        // Container network
-	BasePort      float64        `yaml:"base_port"`
-	PortOffset    float64        `yaml:"port_offset"`
-	Ports         []float64      `yaml:"ports"`
-	Volumes       []core.Mapping `yaml:"volumes"` // Volumes mapping
-	Env           []core.Mapping `yaml:"env"`     // Environment variables
-	Modes         []string       `yaml:"modes"`
+	ImageName     string         `yaml:"image_name"`               // Image name; required
+	ContainerName string         `yaml:"container_name,omitempty"` // Container name
+	Network       string         `yaml:",omitempty"`               // Container network
+	Ports         []core.Mapping `yaml:",omitempty"`               // Ports mapping
+	Volumes       []core.Mapping `yaml:",omitempty"`               // Volumes mapping
+	Env           []core.Mapping `yaml:",omitempty"`               // Environment variables
 }
 
 // ReadConfig reads config from yaml file.
@@ -28,7 +25,7 @@ func ReadConfig(pathToFile string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var conf Config
-	err = yaml.Unmarshal(bytes, &conf)
-	return &conf, err
+	var cfg Config
+	err = yaml.Unmarshal(bytes, &cfg)
+	return &cfg, err
 }

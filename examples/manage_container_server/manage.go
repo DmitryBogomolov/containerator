@@ -11,7 +11,6 @@ import (
 	"github.com/DmitryBogomolov/containerator/core"
 
 	"github.com/DmitryBogomolov/containerator/manage"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
@@ -20,13 +19,12 @@ func parseBool(value string) bool {
 	return ret
 }
 
-func getTag(cli client.ImageAPIClient, cont *types.Container) string {
-	image, err := core.FindImageByID(cli, cont.ImageID)
+func getTag(cli client.ImageAPIClient, cont core.Container) string {
+	image, err := core.FindImageByID(cli, cont.ImageID())
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
 	}
-	_, tag := core.SplitImageNameTag(core.GetImageFullName(image))
-	return tag
+	return image.Tag()
 }
 
 func parseRequestBody(body io.ReadCloser) *manage.Options {
@@ -36,9 +34,9 @@ func parseRequestBody(body io.ReadCloser) *manage.Options {
 		return ret
 	}
 	defer body.Close()
-	if val, ok := data["mode"]; ok {
-		if mode, ok := val.(string); ok {
-			ret.Mode = mode
+	if val, ok := data["postfix"]; ok {
+		if postfix, ok := val.(string); ok {
+			ret.Postfix = postfix
 		}
 	}
 	if val, ok := data["tag"]; ok {
@@ -65,19 +63,13 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	options.GetEnvReader = func(mode string) (io.Reader, error) {
-		reader, err := manage.GetEnvFileReader(filepath.Dir(configPath), mode)
-		if err != nil {
-			logger.Printf("failed to read env for '%s' (%+v)", configPath, err)
-		}
-		return reader, nil
-	}
-	cont, err := manage.Manage(cli, config, options)
+	options.EnvFilePath = filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", options.Postfix))
+	cont, err := manage.RunContainer(cli, config, options)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]string{
-		"name":  core.GetContainerName(cont),
+		"name":  cont.Name(),
 		"image": config.ImageName,
 		"tag":   getTag(cli.(client.ImageAPIClient), cont),
 	}, nil
@@ -88,12 +80,13 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
-	images, err := core.FindImagesByRepo(cli.(client.ImageAPIClient), config.ImageName)
+	images, err := core.FindAllImagesByName(cli.(client.ImageAPIClient), config.ImageName)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"modes": config.Modes,
-		"tags":  core.GetImagesTags(images),
+		"tags": core.TransformSlice(images, func(image core.Image) string {
+			return image.Tag()
+		}),
 	}, nil
 }

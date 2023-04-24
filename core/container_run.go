@@ -2,12 +2,8 @@ package core
 
 import (
 	"fmt"
-	"io"
 	"os"
 
-	"github.com/joho/godotenv"
-
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -21,62 +17,51 @@ type RunContainerOptions struct {
 	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`        // List of volume mappings
 	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`          // List of port mappings
 	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`            // List of environment variables; has priority over `EnvReader`
-	EnvReader     io.Reader     `json:"-" yaml:"-"`                                 // Environment variables in yaml format
 	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"` // Container restart policy
 	Network       string        `json:"network,omitempty" yaml:",omitempty"`        // Container network
 }
 
-func buildPortBindings(options []Mapping) (nat.PortSet, nat.PortMap) {
-	if len(options) == 0 {
+func buildPortBindings(mappings []Mapping) (nat.PortSet, nat.PortMap) {
+	if len(mappings) == 0 {
 		return nil, nil
 	}
-	ports := make(nat.PortSet)
-	bindings := make(nat.PortMap)
-	var dummy struct{}
-	for _, mapping := range options {
-		key := nat.Port(fmt.Sprintf("%s/tcp", mapping.Target))
-		ports[key] = dummy
-		val := nat.PortBinding{
-			HostPort: fmt.Sprintf("%s", mapping.Source),
-			HostIP:   "0.0.0.0",
-		}
-		bindings[key] = []nat.PortBinding{val}
+	ports := make([]string, len(mappings))
+	for i, mapping := range mappings {
+		ports[i] = fmt.Sprintf("0.0.0.0:%s:%s/tcp", mapping.Source, mapping.Target)
 	}
-	return ports, bindings
+	exposedPorts, portBindings, _ := nat.ParsePortSpecs(ports)
+	return exposedPorts, portBindings
 }
 
-func buildMounts(options []Mapping) []mount.Mount {
-	var mounts []mount.Mount
-	for _, mapping := range options {
-		mounts = append(mounts, mount.Mount{
+func buildMounts(mappings []Mapping) []mount.Mount {
+	if len(mappings) == 0 {
+		return nil
+	}
+	result := make([]mount.Mount, 0, len(mappings))
+	for _, mapping := range mappings {
+		result = append(result, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: mapping.Source,
 			Target: mapping.Target,
 		})
 	}
-	return mounts
+	return result
 }
 
-func buildEnvironment(env []Mapping, envReader io.Reader) ([]string, error) {
-	var ret []string
-	if envReader != nil {
-		obj, err := godotenv.Parse(envReader)
-		if err != nil {
-			return nil, err
-		}
-		for name, value := range obj {
-			ret = append(ret, fmt.Sprintf("%s=%s", name, value))
-		}
+func buildEnvironment(mappings []Mapping) []string {
+	if len(mappings) == 0 {
+		return nil
 	}
-	for _, mapping := range env {
+	result := make([]string, 0, len(mappings))
+	for _, mapping := range mappings {
 		name := mapping.Source
 		value := mapping.Target
 		if value == "" {
 			value = os.Getenv(name)
 		}
-		ret = append(ret, fmt.Sprintf("%s=%s", name, value))
+		result = append(result, fmt.Sprintf("%s=%s", name, value))
 	}
-	return ret, nil
+	return result
 }
 
 /*
@@ -101,17 +86,13 @@ If created container fails at start it is removed.
 		},
 	}) -> &container
 */
-func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (*types.Container, error) {
+func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (Container, error) {
 	config := container.Config{}
 	hostConfig := container.HostConfig{}
 
 	config.Image = options.Image
 	config.ExposedPorts, hostConfig.PortBindings = buildPortBindings(options.Ports)
-	env, err := buildEnvironment(options.Env, options.EnvReader)
-	if err != nil {
-		return nil, err
-	}
-	config.Env = env
+	config.Env = buildEnvironment(options.Env)
 	hostConfig.Mounts = buildMounts(options.Volumes)
 	if options.RestartPolicy != "" {
 		hostConfig.RestartPolicy.Name = string(options.RestartPolicy)
@@ -124,10 +105,11 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	if err != nil {
 		return nil, err
 	}
-	err = cliContainerStart(cli, body.ID)
+	containerID := body.ID
+	err = cliContainerStart(cli, containerID)
 	if err != nil {
-		cliContainerRemove(cli, body.ID)
+		cliContainerRemove(cli, containerID)
 		return nil, err
 	}
-	return FindContainerByID(cli, body.ID)
+	return FindContainerByID(cli, containerID)
 }
