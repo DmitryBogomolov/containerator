@@ -58,20 +58,10 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 	}
 
 	if options.Remove {
-		if currentContainer == nil {
-			return nil, &NoContainerError{containerName}
-		}
-		if err = core.RemoveContainer(containerCli, currentContainer); err != nil {
-			return nil, err
-		}
-		return currentContainer, nil
+		return removeContainer(containerCli, currentContainer, containerName)
 	}
 
-	imageName := cfg.ImageName
-	if options.Tag != "" {
-		imageName += ":" + options.Tag
-	}
-	image, err := core.FindImageByName(cli.(client.ImageAPIClient), cfg.ImageName)
+	image, err := findImage(cli.(client.ImageAPIClient), cfg.ImageName, options.Tag)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +70,7 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 		return nil, &ContainerAlreadyRunningError{currentContainer.Name()}
 	}
 
-	runOptions, err := buildContainerOptions(cfg, imageName, containerName, options)
+	runOptions, err := buildContainerOptions(cfg, image.FullName(), containerName, options)
 	if err != nil {
 		return nil, err
 	}

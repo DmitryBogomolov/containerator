@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
 )
 
@@ -46,6 +47,24 @@ func getContainerName(conf *Config, postfix string) string {
 		name += "-" + postfix
 	}
 	return name
+}
+
+func removeContainer(cli client.ContainerAPIClient, container core.Container, name string) (core.Container, error) {
+	if container == nil {
+		return nil, &NoContainerError{name}
+	}
+	if err := core.RemoveContainer(cli, container); err != nil {
+		return nil, err
+	}
+	return container, nil
+}
+
+func findImage(cli client.ImageAPIClient, name string, tag string) (core.Image, error) {
+	imageName := name
+	if tag != "" {
+		imageName += ":" + tag
+	}
+	return core.FindImageByName(cli.(client.ImageAPIClient), imageName)
 }
 
 func buildContainerOptions(
