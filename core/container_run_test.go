@@ -1,4 +1,4 @@
-package core_test
+package core
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/test_mocks"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -170,42 +169,6 @@ func TestRunContainer(t *testing.T) {
 		})
 	})
 
-	t.Run("EnvReader", func(t *testing.T) {
-		cli := test_mocks.NewMockContainerAPIClient(ctrl)
-		cli.EXPECT().
-			ContainerCreate(
-				gomock.Any(),
-				&container.Config{
-					Image: "image:1",
-					Env: []string{
-						"A=0",
-						"A=1",
-						"B=2",
-					},
-				},
-				&container.HostConfig{},
-				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
-		cli.EXPECT().
-			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
-			Return(nil)
-		cli.EXPECT().
-			ContainerList(gomock.Any(), gomock.Any()).
-			Return([]types.Container{
-				{},
-			}, nil)
-
-		RunContainer(cli, &RunContainerOptions{
-			Image: "image:1",
-			Name:  "container-1",
-			Env: []Mapping{
-				{"A", "1"},
-				{"B", "2"},
-			},
-			EnvReader: strings.NewReader("#test\nA=0\n"),
-		})
-	})
-
 	t.Run("RestartPolicy", func(t *testing.T) {
 		cli := test_mocks.NewMockContainerAPIClient(ctrl)
 		cli.EXPECT().
@@ -263,118 +226,120 @@ func TestRunContainer(t *testing.T) {
 	})
 }
 
-func TestRunContainerOptionsJSONMarshal(t *testing.T) {
-	options := RunContainerOptions{
-		Image:   "image:1",
-		Name:    "container-1",
-		Network: "network-1",
-		Volumes: []Mapping{
-			{"/src1", "/dst1"},
-		},
-		Env: []Mapping{
-			{"A", "1"},
-			{"B", "2"},
-		},
-	}
+func TestRunContainerOptions(t *testing.T) {
+	t.Run("JSONMarshal", func(t *testing.T) {
+		options := RunContainerOptions{
+			Image:   "image:1",
+			Name:    "container-1",
+			Network: "network-1",
+			Volumes: []Mapping{
+				{"/src1", "/dst1"},
+			},
+			Env: []Mapping{
+				{"A", "1"},
+				{"B", "2"},
+			},
+		}
 
-	bytes, err := json.MarshalIndent(options, "", "  ")
-	data := string(bytes)
+		bytes, err := json.MarshalIndent(options, "", "  ")
+		data := string(bytes)
 
-	assert.NoError(t, err)
-	expected := strings.Join([]string{
-		`{`,
-		`  "image": "image:1",`,
-		`  "name": "container-1",`,
-		`  "volumes": [`,
-		`    {`,
-		`      "/src1": "/dst1"`,
-		`    }`,
-		`  ],`,
-		`  "env": [`,
-		`    {`,
-		`      "A": "1"`,
-		`    },`,
-		`    {`,
-		`      "B": "2"`,
-		`    }`,
-		`  ],`,
-		`  "network": "network-1"`,
-		`}`,
-	}, "\n")
-	assert.Equal(t, expected, data)
-}
+		assert.NoError(t, err)
+		expected := strings.Join([]string{
+			`{`,
+			`  "image": "image:1",`,
+			`  "name": "container-1",`,
+			`  "volumes": [`,
+			`    {`,
+			`      "/src1": "/dst1"`,
+			`    }`,
+			`  ],`,
+			`  "env": [`,
+			`    {`,
+			`      "A": "1"`,
+			`    },`,
+			`    {`,
+			`      "B": "2"`,
+			`    }`,
+			`  ],`,
+			`  "network": "network-1"`,
+			`}`,
+		}, "\n")
+		assert.Equal(t, expected, data)
+	})
 
-func TestRunContainerOptionsJSONUnmarshal(t *testing.T) {
-	data := strings.Join([]string{
-		`{`,
-		`"image": "image:1",`,
-		`"name": "container-1",`,
-		`"env": [`,
-		`{"A": "1" },`,
-		`{ "B": "2" }`,
-		`]`,
-		`}`,
-	}, "\n")
-	var options RunContainerOptions
+	t.Run("JSONUnmarshal", func(t *testing.T) {
+		data := strings.Join([]string{
+			`{`,
+			`"image": "image:1",`,
+			`"name": "container-1",`,
+			`"env": [`,
+			`{"A": "1" },`,
+			`{ "B": "2" }`,
+			`]`,
+			`}`,
+		}, "\n")
+		var options RunContainerOptions
 
-	err := json.Unmarshal([]byte(data), &options)
+		err := json.Unmarshal([]byte(data), &options)
 
-	assert.NoError(t, err)
-	assert.Equal(t, RunContainerOptions{
-		Image: "image:1",
-		Name:  "container-1",
-		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
-	}, options)
-}
+		assert.NoError(t, err)
+		assert.Equal(t, RunContainerOptions{
+			Image: "image:1",
+			Name:  "container-1",
+			Env:   []Mapping{{"A", "1"}, {"B", "2"}},
+		}, options)
+	})
 
-func TestRunContainerOptionsYAMLMarshal(t *testing.T) {
-	options := RunContainerOptions{
-		Image:   "image:1",
-		Name:    "container-1",
-		Network: "network-1",
-		Volumes: []Mapping{
-			{"/src1", "/dst1"},
-		},
-		Env: []Mapping{
-			{"A", "1"},
-			{"B", "2"},
-		},
-	}
+	t.Run("YAMLMarshal", func(t *testing.T) {
+		options := RunContainerOptions{
+			Image:   "image:1",
+			Name:    "container-1",
+			Network: "network-1",
+			Volumes: []Mapping{
+				{"/src1", "/dst1"},
+			},
+			Env: []Mapping{
+				{"A", "1"},
+				{"B", "2"},
+			},
+		}
 
-	bytes, err := yaml.Marshal(options)
-	data := string(bytes)
+		bytes, err := yaml.Marshal(options)
+		data := string(bytes)
 
-	assert.NoError(t, err)
-	expected := strings.Join([]string{
-		"image: image:1",
-		"name: container-1",
-		"volumes:",
-		"- /src1: /dst1",
-		"env:",
-		`- A: "1"`,
-		`- B: "2"`,
-		"network: network-1",
-		"",
-	}, "\n")
-	assert.Equal(t, expected, data)
-}
+		assert.NoError(t, err)
+		expected := strings.Join([]string{
+			"image: image:1",
+			"name: container-1",
+			"volumes:",
+			"- /src1: /dst1",
+			"env:",
+			`- A: "1"`,
+			`- B: "2"`,
+			"network: network-1",
+			"",
+		}, "\n")
+		assert.Equal(t, expected, data)
+	})
 
-func TestRunContainerOptionsYAMLUnmarshal(t *testing.T) {
-	data := strings.Join([]string{
-		"image: image:1",
-		"name: container-1",
-		"env:",
-		"- A: 1",
-		"- B: 2",
-	}, "\n")
-	var options RunContainerOptions
+	t.Run("YAMLUnmarshal", func(t *testing.T) {
+		data := strings.Join([]string{
+			"image: image:1",
+			"name: container-1",
+			"env:",
+			"- A: 1",
+			"- B: 2",
+		}, "\n")
+		var options RunContainerOptions
 
-	err := yaml.Unmarshal([]byte(data), &options)
+		err := yaml.Unmarshal([]byte(data), &options)
 
-	assert.NoError(t, err)
-	assert.Equal(t, RunContainerOptions{
-		Image: "image:1",
-		Name:  "container-1",
-		Env:   []Mapping{{"A", "1"}, {"B", "2"}},
-	}, options)
+		assert.NoError(t, err)
+		assert.Equal(t, RunContainerOptions{
+			Image: "image:1",
+			Name:  "container-1",
+			Env:   []Mapping{{"A", "1"}, {"B", "2"}},
+		}, options)
+	})
 }

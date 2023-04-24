@@ -7,6 +7,7 @@ import (
 
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
+	"github.com/joho/godotenv"
 )
 
 func updateContainer(
@@ -91,7 +92,15 @@ func Manage(cli interface{}, cfg *Config, options *Options) (core.Container, err
 		if err != nil {
 			return nil, err
 		}
-		runOptions.EnvReader = reader
+		data, err := godotenv.Parse(reader)
+		if err != nil {
+			return nil, err
+		}
+		mappings := make([]core.Mapping, len(data))
+		for key, val := range data {
+			mappings = append(mappings, core.Mapping{Source: key, Target: val})
+		}
+		runOptions.Env = append(runOptions.Env, mappings...)
 	}
 	return updateContainer(runOptions, currentContainer, containerCli)
 }
