@@ -86,7 +86,7 @@ func TestBuildContainerOptions(t *testing.T) {
 			Network:    "test-net",
 			BasePort:   200,
 			PortOffset: 10,
-			Ports:      []float64{1, 2},
+			Ports:      []int{1, 2},
 		}, "test-image", "test-container", 1)
 
 		assert.Equal(t, expected, actual)

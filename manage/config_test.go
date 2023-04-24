@@ -20,7 +20,7 @@ func TestConfig(t *testing.T) {
 			Modes:         []string{"dev", "test", "prod"},
 			BasePort:      1001,
 			PortOffset:    42,
-			Ports:         []float64{11, 12, 13},
+			Ports:         []int{11, 12, 13},
 			Volumes: []core.Mapping{
 				{Source: "/a", Target: "/b"},
 			},
@@ -91,7 +91,7 @@ func TestConfig(t *testing.T) {
 
 func TestReadConfig(t *testing.T) {
 	t.Run("Read file", func(t *testing.T) {
-		ioutil.WriteFile("test.yaml", []byte("image_repo: my-image\nmodes: ['a', 'b']\n"), os.ModePerm)
+		ioutil.WriteFile("test.yaml", []byte("image_name: my-image\nmodes: ['a', 'b']\n"), os.ModePerm)
 		defer os.Remove("test.yaml")
 
 		config, err := ReadConfig("test.yaml")

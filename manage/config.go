@@ -12,9 +12,9 @@ type Config struct {
 	ImageName     string         `yaml:"image_name"`               // Image name; required
 	ContainerName string         `yaml:"container_name,omitempty"` // Container name
 	Network       string         `yaml:",omitempty"`               // Container network
-	BasePort      float64        `yaml:"base_port,omitempty"`
-	PortOffset    float64        `yaml:"port_offset,omitempty"`
-	Ports         []float64      `yaml:",omitempty"`
+	BasePort      int            `yaml:"base_port,omitempty"`
+	PortOffset    int            `yaml:"port_offset,omitempty"`
+	Ports         []int          `yaml:",omitempty"`
 	Volumes       []core.Mapping `yaml:",omitempty"` // Volumes mapping
 	Env           []core.Mapping `yaml:",omitempty"` // Environment variables
 	Modes         []string       `yaml:",omitempty"`
