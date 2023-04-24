@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/joho/godotenv"
 )
 
 func findIndex[T comparable](item T, list []T) int {
@@ -36,49 +37,49 @@ func (err *NotValidModeError) Modes() []string {
 	return append([]string(nil), err.modes...)
 }
 
-func selectMode(modeOption string, conf *Config) (string, int, error) {
-	index := findIndex(modeOption, conf.Modes)
-	if index >= 0 {
-		return modeOption, index, nil
-	}
-	if modeOption == "" && len(conf.Modes) == 0 {
-		return modeOption, 0, nil
-	}
-	return "", 0, &NotValidModeError{modeOption, conf.Modes}
-}
-
-func getContainerName(conf *Config, mode string) string {
+func getContainerName(conf *Config, postfix string) string {
 	name := conf.ContainerName
 	if name == "" {
 		name = conf.ImageName
 	}
-	if mode != "" {
-		name += "-" + mode
+	if postfix != "" {
+		name += "-" + postfix
 	}
 	return name
 }
 
 func buildContainerOptions(
-	conf *Config, imageName string, containerName string, modeIndex int,
-) *core.RunContainerOptions {
-	ret := core.RunContainerOptions{
+	cfg *Config, imageName string, containerName string, options *Options,
+) (*core.RunContainerOptions, error) {
+	result := core.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,
 		RestartPolicy: core.RestartAlways,
-		Network:       conf.Network,
-		Volumes:       conf.Volumes,
-		Env:           conf.Env,
+		Network:       cfg.Network,
+		Volumes:       cfg.Volumes,
+		Env:           cfg.Env,
 	}
-	if len(conf.Ports) > 0 {
-		basePort := int(conf.BasePort) + int(conf.PortOffset)*modeIndex
-		ports := make([]core.Mapping, len(conf.Ports))
-		for i, port := range conf.Ports {
+	if options.PortOffset != 0 && len(cfg.Ports) > 0 {
+		ports := make([]core.Mapping, len(cfg.Ports))
+		for i, mapping := range cfg.Ports {
+			val, _ := strconv.Atoi(mapping.Source)
 			ports[i] = core.Mapping{
-				Source: strconv.Itoa(basePort + i),
-				Target: strconv.Itoa(int(port)),
+				Source: strconv.Itoa(val + options.PortOffset),
+				Target: mapping.Target,
 			}
 		}
-		ret.Ports = ports
+		result.Ports = ports
 	}
-	return &ret
+	if options.EnvFilePath != "" {
+		data, err := godotenv.Read(options.EnvFilePath)
+		if err != nil {
+			return nil, err
+		}
+		mappings := make([]core.Mapping, 0, len(data))
+		for key, val := range data {
+			mappings = append(mappings, core.Mapping{Source: key, Target: val})
+		}
+		result.Env = append(result.Env, mappings...)
+	}
+	return &result, nil
 }

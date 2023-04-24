@@ -6,11 +6,10 @@ import (
 
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
-	"github.com/joho/godotenv"
 )
 
 func updateContainer(
-	options *core.RunContainerOptions, currentContainer core.Container, cli client.ContainerAPIClient,
+	cli client.ContainerAPIClient, options *core.RunContainerOptions, currentContainer core.Container,
 ) (container core.Container, err error) {
 	if currentContainer != nil {
 		if err = core.SuspendContainer(cli, currentContainer); err != nil {
@@ -32,11 +31,12 @@ func updateContainer(
 
 // Options contains additional arguments for Manage function.
 type Options struct {
-	Mode        string // If set should match one of modes in config
+	Postfix     string // Container name postfix
 	Tag         string // Image tag; if not set newest image is selected
 	Force       bool   // If set running container is replaced
 	Remove      bool   // If set running container is removed
-	EnvFilePath string // Path to env file
+	PortOffset  int    // Host machine port offset
+	EnvFilePath string // Path to file with additional environment variables
 }
 
 // DefaultConfigName defines default name of config file.
@@ -46,12 +46,7 @@ const DefaultConfigName = "config.yaml"
 //
 //	RunContainer(cli, "/path/to/config.yaml", &Options{Mode:"dev"}) -> &container, err
 func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Container, error) {
-	mode, modeIndex, err := selectMode(options.Mode, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	containerName := getContainerName(cfg, mode)
+	containerName := getContainerName(cfg, options.Postfix)
 
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
@@ -85,17 +80,9 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 		return nil, &ContainerAlreadyRunningError{currentContainer.Name()}
 	}
 
-	runOptions := buildContainerOptions(cfg, image.FullName(), containerName, modeIndex)
-	if options.EnvFilePath != "" {
-		data, err := godotenv.Read(options.EnvFilePath)
-		if err != nil {
-			return nil, err
-		}
-		mappings := make([]core.Mapping, len(data))
-		for key, val := range data {
-			mappings = append(mappings, core.Mapping{Source: key, Target: val})
-		}
-		runOptions.Env = append(runOptions.Env, mappings...)
+	runOptions, err := buildContainerOptions(cfg, imageName, containerName, options)
+	if err != nil {
+		return nil, err
 	}
-	return updateContainer(runOptions, currentContainer, containerCli)
+	return updateContainer(containerCli, runOptions, currentContainer)
 }

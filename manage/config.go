@@ -12,12 +12,9 @@ type Config struct {
 	ImageName     string         `yaml:"image_name"`               // Image name; required
 	ContainerName string         `yaml:"container_name,omitempty"` // Container name
 	Network       string         `yaml:",omitempty"`               // Container network
-	BasePort      int            `yaml:"base_port,omitempty"`
-	PortOffset    int            `yaml:"port_offset,omitempty"`
-	Ports         []int          `yaml:",omitempty"`
-	Volumes       []core.Mapping `yaml:",omitempty"` // Volumes mapping
-	Env           []core.Mapping `yaml:",omitempty"` // Environment variables
-	Modes         []string       `yaml:",omitempty"`
+	Ports         []core.Mapping `yaml:",omitempty"`               // Ports mapping
+	Volumes       []core.Mapping `yaml:",omitempty"`               // Volumes mapping
+	Env           []core.Mapping `yaml:",omitempty"`               // Environment variables
 }
 
 // ReadConfig reads config from yaml file.
@@ -28,7 +25,7 @@ func ReadConfig(pathToFile string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var conf Config
-	err = yaml.Unmarshal(bytes, &conf)
-	return &conf, err
+	var cfg Config
+	err = yaml.Unmarshal(bytes, &cfg)
+	return &cfg, err
 }

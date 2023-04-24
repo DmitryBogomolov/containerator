@@ -17,10 +17,10 @@ func TestConfig(t *testing.T) {
 			ImageName:     "test-image",
 			ContainerName: "test-container",
 			Network:       "test-network",
-			Modes:         []string{"dev", "test", "prod"},
-			BasePort:      1001,
-			PortOffset:    42,
-			Ports:         []int{11, 12, 13},
+			Ports: []core.Mapping{
+				{Source: "5001", Target: "11"},
+				{Source: "5002", Target: "12"},
+			},
 			Volumes: []core.Mapping{
 				{Source: "/a", Target: "/b"},
 			},
@@ -38,21 +38,14 @@ func TestConfig(t *testing.T) {
 			"image_name: test-image",
 			"container_name: test-container",
 			"network: test-network",
-			"base_port: 1001",
-			"port_offset: 42",
 			"ports:",
-			"- 11",
-			"- 12",
-			"- 13",
+			`- "5001": "11"`,
+			`- "5002": "12"`,
 			"volumes:",
 			"- /a: /b",
 			"env:",
 			`- A: "1"`,
 			`- B: "2"`,
-			"modes:",
-			"- dev",
-			"- test",
-			"- prod",
 			"",
 		}, "\n")
 		assert.Equal(t, expected, data)
@@ -65,9 +58,6 @@ func TestConfig(t *testing.T) {
 			"env:",
 			`- A: "1"`,
 			`- B: "2"`,
-			"modes:",
-			"- dev",
-			"- prod",
 		}, "\n")
 		var config Config
 
@@ -81,25 +71,26 @@ func TestConfig(t *testing.T) {
 				{Source: "A", Target: "1"},
 				{Source: "B", Target: "2"},
 			},
-			Modes: []string{
-				"dev",
-				"prod",
-			},
 		}, config)
 	})
 }
 
 func TestReadConfig(t *testing.T) {
 	t.Run("Read file", func(t *testing.T) {
-		ioutil.WriteFile("test.yaml", []byte("image_name: my-image\nmodes: ['a', 'b']\n"), os.ModePerm)
-		defer os.Remove("test.yaml")
+		testContent := strings.Join([]string{
+			"image_name: test-image",
+			"container_name: test-container",
+		}, "\n")
+		testFile := "test.yaml"
+		ioutil.WriteFile(testFile, []byte(testContent), os.ModePerm)
+		defer os.Remove(testFile)
 
-		config, err := ReadConfig("test.yaml")
+		config, err := ReadConfig(testFile)
 
 		assert.NoError(t, err, "error")
 		assert.Equal(t, &Config{
-			ImageName: "my-image",
-			Modes:     []string{"a", "b"},
+			ImageName:     "test-image",
+			ContainerName: "test-container",
 		}, config, "config")
 	})
 

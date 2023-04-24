@@ -34,9 +34,9 @@ func parseRequestBody(body io.ReadCloser) *manage.Options {
 		return ret
 	}
 	defer body.Close()
-	if val, ok := data["mode"]; ok {
-		if mode, ok := val.(string); ok {
-			ret.Mode = mode
+	if val, ok := data["postfix"]; ok {
+		if postfix, ok := val.(string); ok {
+			ret.Postfix = postfix
 		}
 	}
 	if val, ok := data["tag"]; ok {
@@ -63,7 +63,7 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	options.EnvFilePath = filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", options.Mode))
+	options.EnvFilePath = filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", options.Postfix))
 	cont, err := manage.RunContainer(cli, config, options)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,6 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 		return nil, err
 	}
 	return map[string]interface{}{
-		"modes": config.Modes,
 		"tags": core.TransformSlice(images, func(image core.Image) string {
 			return image.Tag()
 		}),

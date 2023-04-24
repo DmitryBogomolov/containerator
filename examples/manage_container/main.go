@@ -20,8 +20,8 @@ func run() error {
 	flag.StringVar(&imageRepo, "image", "", "image repo")
 	var containerName string
 	flag.StringVar(&containerName, "container", "", "container name")
-	var modeOption string
-	flag.StringVar(&modeOption, "mode", "", "mode")
+	var postfixOption string
+	flag.StringVar(&postfixOption, "postfix", "", "postfix")
 	var tagOption string
 	flag.StringVar(&tagOption, "tag", "", "image tag")
 	var removeOption bool
@@ -55,11 +55,11 @@ func run() error {
 	}
 
 	options := &manage.Options{
-		Mode:        modeOption,
+		Postfix:     postfixOption,
 		Tag:         tagOption,
 		Force:       forceOption,
 		Remove:      removeOption,
-		EnvFilePath: filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", modeOption)),
+		EnvFilePath: filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", postfixOption)),
 	}
 	container, err := manage.RunContainer(cli, config, options)
 

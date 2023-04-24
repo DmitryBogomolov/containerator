@@ -1,6 +1,9 @@
 package manage
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/DmitryBogomolov/containerator/core"
@@ -8,87 +11,122 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSelectMode(t *testing.T) {
-	conf := &Config{
-		Modes: []string{"m1", "m2", "m3"},
-	}
-
-	t.Run("Unknown mode", func(t *testing.T) {
-		mode, i, err := selectMode("m4", conf)
-
-		assert.Error(t, err, "error")
-		assert.Equal(t, (err.(*NotValidModeError)).mode, "m4", "error data")
-		assert.Equal(t, "", mode, "mode")
-		assert.Equal(t, 0, i, "index")
-	})
-
-	t.Run("Known mode", func(t *testing.T) {
-		mode, i, err := selectMode("m2", conf)
-
-		assert.NoError(t, nil, err, "error")
-		assert.Equal(t, "m2", mode, "mode")
-		assert.Equal(t, 1, i, "index")
-	})
-
-	t.Run("Empty mode", func(t *testing.T) {
-		mode, i, err := selectMode("", &Config{})
-
-		assert.NoError(t, nil, err, "error")
-		assert.Equal(t, "", mode, "mode")
-		assert.Equal(t, 0, i, "index")
-	})
-}
-
 func TestGetContainerName(t *testing.T) {
-	t.Run("Without mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageName: "test-name"}, "")
-		assert.Equal(t, "test-name", name)
+	t.Run("Without postfix", func(t *testing.T) {
+		cfg := Config{ImageName: "test-name"}
+		assert.Equal(t, "test-name", getContainerName(&cfg, ""))
 	})
 
-	t.Run("With mode", func(t *testing.T) {
-		name := getContainerName(&Config{ImageName: "test-name"}, "dev")
-		assert.Equal(t, "test-name-dev", name)
+	t.Run("With postfix", func(t *testing.T) {
+		cfg := Config{ImageName: "test-name"}
+		assert.Equal(t, "test-name-dev", getContainerName(&cfg, "dev"))
 	})
 
 	t.Run("Prefer container name", func(t *testing.T) {
-		name := getContainerName(&Config{ImageName: "test-image", ContainerName: "test-container"}, "m1")
-		assert.Equal(t, "test-container-m1", name)
+		cfg := Config{ImageName: "test-image", ContainerName: "test-container"}
+		assert.Equal(t, "test-container-m1", getContainerName(&cfg, "m1"))
 	})
 }
 
 func TestBuildContainerOptions(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		expected := &core.RunContainerOptions{
-			Image:         "test-image",
-			Name:          "test-container",
-			RestartPolicy: core.RestartAlways,
-			Network:       "test-net",
-		}
-		actual := buildContainerOptions(&Config{
-			Network: "test-net",
-		}, "test-image", "test-container", 1)
+		actual, err := buildContainerOptions(
+			&Config{
+				Network: "test-net",
+				Volumes: []core.Mapping{
+					{Source: "/a", Target: "/usr/a"},
+					{Source: "/b", Target: "/usr/b"},
+				},
+			},
+			"test-image",
+			"test-container",
+			&Options{},
+		)
 
-		assert.Equal(t, expected, actual)
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			&core.RunContainerOptions{
+				Image:         "test-image",
+				Name:          "test-container",
+				RestartPolicy: core.RestartAlways,
+				Network:       "test-net",
+				Volumes: []core.Mapping{
+					{Source: "/a", Target: "/usr/a"},
+					{Source: "/b", Target: "/usr/b"},
+				},
+			},
+			actual,
+		)
 	})
 
 	t.Run("With ports", func(t *testing.T) {
-		expected := &core.RunContainerOptions{
-			Image:         "test-image",
-			Name:          "test-container",
-			RestartPolicy: core.RestartAlways,
-			Network:       "test-net",
-			Ports: []core.Mapping{
-				{Source: "210", Target: "1"},
-				{Source: "211", Target: "2"},
+		actual, err := buildContainerOptions(
+			&Config{
+				Ports: []core.Mapping{
+					{Source: "5001", Target: "11"},
+					{Source: "5002", Target: "12"},
+				},
 			},
-		}
-		actual := buildContainerOptions(&Config{
-			Network:    "test-net",
-			BasePort:   200,
-			PortOffset: 10,
-			Ports:      []int{1, 2},
-		}, "test-image", "test-container", 1)
+			"test-image",
+			"test-container",
+			&Options{
+				PortOffset: 20,
+			},
+		)
 
-		assert.Equal(t, expected, actual)
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			&core.RunContainerOptions{
+				Image:         "test-image",
+				Name:          "test-container",
+				RestartPolicy: core.RestartAlways,
+				Ports: []core.Mapping{
+					{Source: "5021", Target: "11"},
+					{Source: "5022", Target: "12"},
+				},
+			},
+			actual,
+		)
+	})
+
+	t.Run("With env file", func(t *testing.T) {
+		testContent := strings.Join([]string{
+			"B=2x",
+		}, "\n")
+		testFile := "test.yaml"
+		ioutil.WriteFile(testFile, []byte(testContent), os.ModePerm)
+		defer os.Remove(testFile)
+
+		actual, err := buildContainerOptions(
+			&Config{
+				Env: []core.Mapping{
+					{Source: "A", Target: "1"},
+					{Source: "B", Target: "2"},
+				},
+			},
+			"test-image",
+			"test-container",
+			&Options{
+				EnvFilePath: testFile,
+			},
+		)
+
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			&core.RunContainerOptions{
+				Image:         "test-image",
+				Name:          "test-container",
+				RestartPolicy: core.RestartAlways,
+				Env: []core.Mapping{
+					{Source: "A", Target: "1"},
+					{Source: "B", Target: "2"},
+					{Source: "B", Target: "2x"},
+				},
+			},
+			actual,
+		)
 	})
 }

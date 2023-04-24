@@ -53,26 +53,33 @@ cli, _ = client.NewEnvClient()
 config = &manage.Config{
 	ImageName: "my-umage",
 	ContainerName: "my-container",
-    Modes: []string{
-        "dev",
-        "test",
-        "prod",
+    Network: "my-network",
+    Volumes: []core.Mapping{
+        // ...
+    },
+    Ports: []core.Mapping{
+        // ...
+    },
+    Env: []core.Mapping{
+        // ...
     },
 }
 
 manage.RunContainer(cli, config, &manage.Options{
-    Mode: "dev"
+    Postfix: "dev"
 	Tag: "latest",
 	EnvFilePath: "./env-dev.list",
 })
 manage.RunContainer(cli, config, &manage.Options{
-    Mode: "test"
+    Postfix: "test"
 	Tag: "latest",
+    Portoffset: 10,
 	EnvFilePath: "./env-test.list",
 })
 manage.RunContainer(cli, config, &manage.Options{
-    Mode: "prod"
+    Postfix: "prod"
 	Tag: "2",
+    Portoffset: 20,
 	EnvFilePath: "./env-prod.list",
 })
 ```
