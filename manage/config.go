@@ -9,15 +9,15 @@ import (
 
 // Config contains options for container management.
 type Config struct {
-	ImageName     string         `yaml:"image_repo"`     // Image name; required
-	ContainerName string         `yaml:"container_name"` // Container name
-	Network       string         `yaml:"network"`        // Container network
-	BasePort      float64        `yaml:"base_port"`
-	PortOffset    float64        `yaml:"port_offset"`
-	Ports         []float64      `yaml:"ports"`
-	Volumes       []core.Mapping `yaml:"volumes"` // Volumes mapping
-	Env           []core.Mapping `yaml:"env"`     // Environment variables
-	Modes         []string       `yaml:"modes"`
+	ImageName     string         `yaml:"image_name"`               // Image name; required
+	ContainerName string         `yaml:"container_name,omitempty"` // Container name
+	Network       string         `yaml:",omitempty"`               // Container network
+	BasePort      float64        `yaml:"base_port,omitempty"`
+	PortOffset    float64        `yaml:"port_offset,omitempty"`
+	Ports         []float64      `yaml:",omitempty"`
+	Volumes       []core.Mapping `yaml:",omitempty"` // Volumes mapping
+	Env           []core.Mapping `yaml:",omitempty"` // Environment variables
+	Modes         []string       `yaml:",omitempty"`
 }
 
 // ReadConfig reads config from yaml file.
