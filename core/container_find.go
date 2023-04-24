@@ -69,7 +69,7 @@ func FindContainerByName(cli client.ContainerAPIClient, name string) (Container,
 //
 // `imageID` is a full image identifier - 64 characters with leading "sha256:".
 //
-//	FindContainersByImageID(cli, "sha256:<guid>") -> container
+//	FindContainersByImageID(cli, "sha256:<guid>") -> []container
 func FindContainersByImageID(cli client.ContainerAPIClient, imageID string) ([]Container, error) {
 	containers, err := cliContainerList(cli)
 	if err != nil {
