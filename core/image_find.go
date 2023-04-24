@@ -22,7 +22,7 @@ func FindImageByID(cli client.ImageAPIClient, id string) (Image, error) {
 			return makeImage(&images[i]), nil
 		}
 	}
-	return nil, &ImageNotFoundError{id}
+	return nil, nil
 }
 
 // FindImageByShortID searches image by short id.
@@ -42,7 +42,7 @@ func FindImageByShortID(cli client.ImageAPIClient, id string) (Image, error) {
 			return makeImage(&images[i]), nil
 		}
 	}
-	return nil, &ImageNotFoundError{id}
+	return nil, nil
 }
 
 func normalizeImageName(name string) string {
@@ -70,7 +70,7 @@ func FindImageByName(cli client.ImageAPIClient, name string) (Image, error) {
 			}
 		}
 	}
-	return nil, &ImageNotFoundError{name}
+	return nil, nil
 }
 
 // FindAllImagesByName searches images by repo.

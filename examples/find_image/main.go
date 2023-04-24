@@ -16,27 +16,27 @@ func displayImage(image core.Image) string {
 
 func findImageByID(cli *client.Client, id string) error {
 	image, err := core.FindImageByShortID(cli, id)
-	if _, ok := err.(*core.ImageNotFoundError); ok {
-		fmt.Println("Image not found")
-		return nil
-	}
 	if err != nil {
 		return err
 	}
-	fmt.Println(displayImage(image))
+	if image == nil {
+		fmt.Println("Image not found")
+	} else {
+		fmt.Println(displayImage(image))
+	}
 	return nil
 }
 
 func findImageByName(cli *client.Client, name string) error {
 	image, err := core.FindImageByName(cli, name)
-	if _, ok := err.(*core.ImageNotFoundError); ok {
-		fmt.Println("Image not found")
-		return nil
-	}
 	if err != nil {
 		return err
 	}
-	fmt.Println(displayImage(image))
+	if image == nil {
+		fmt.Println("Image not found")
+	} else {
+		fmt.Println(displayImage(image))
+	}
 	return nil
 }
 

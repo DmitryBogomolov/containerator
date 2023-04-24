@@ -51,10 +51,7 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*core.ContainerNotFoundError); !ok {
-			return nil, err
-		}
-		currentContainer = nil
+		return nil, err
 	}
 
 	if options.Remove {

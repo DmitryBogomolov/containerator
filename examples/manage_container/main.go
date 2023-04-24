@@ -16,8 +16,8 @@ import (
 func run() error {
 	var configPathOption string
 	flag.StringVar(&configPathOption, "config", manage.DefaultConfigName, "configuration file")
-	var imageRepo string
-	flag.StringVar(&imageRepo, "image", "", "image repo")
+	var imageName string
+	flag.StringVar(&imageName, "image", "", "image name")
 	var containerName string
 	flag.StringVar(&containerName, "container", "", "container name")
 	var postfixOption string
@@ -43,15 +43,15 @@ func run() error {
 		}
 		config = &manage.Config{}
 	}
-	if imageRepo != "" {
-		config.ImageName = imageRepo
+	if imageName != "" {
+		config.ImageName = imageName
 	}
 	if containerName != "" {
 		config.ContainerName = containerName
 	}
 
 	if config.ImageName == "" {
-		return errors.New("image repo is not defined")
+		return errors.New("image name is not defined")
 	}
 
 	options := &manage.Options{

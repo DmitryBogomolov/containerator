@@ -16,27 +16,27 @@ func displayContainer(container core.Container) string {
 
 func findContainerByID(cli *client.Client, id string) error {
 	container, err := core.FindContainerByShortID(cli, id)
-	if _, ok := err.(*core.ContainerNotFoundError); ok {
-		fmt.Println("Container not found")
-		return nil
-	}
 	if err != nil {
 		return err
 	}
-	fmt.Println(displayContainer(container))
+	if container == nil {
+		fmt.Println("Container not found")
+	} else {
+		fmt.Println(displayContainer(container))
+	}
 	return nil
 }
 
 func findContainerByName(cli *client.Client, name string) error {
 	container, err := core.FindContainerByName(cli, name)
-	if _, ok := err.(*core.ContainerNotFoundError); ok {
-		fmt.Println("Container not found")
-		return nil
-	}
 	if err != nil {
 		return err
 	}
-	fmt.Println(displayContainer(container))
+	if container == nil {
+		fmt.Println("Container not found")
+	} else {
+		fmt.Println(displayContainer(container))
+	}
 	return nil
 }
 
