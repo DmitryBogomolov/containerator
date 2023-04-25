@@ -1,8 +1,6 @@
 package manage
 
 import (
-	"strconv"
-
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
@@ -64,17 +62,6 @@ func buildContainerOptions(
 		Volumes:       cfg.Volumes,
 		Ports:         cfg.Ports,
 		Env:           cfg.Env,
-	}
-	if options.PortOffset != 0 && len(cfg.Ports) > 0 {
-		ports := make([]core.Mapping, len(cfg.Ports))
-		for i, mapping := range cfg.Ports {
-			val, _ := strconv.Atoi(mapping.Source)
-			ports[i] = core.Mapping{
-				Source: strconv.Itoa(val + options.PortOffset),
-				Target: mapping.Target,
-			}
-		}
-		result.Ports = ports
 	}
 	if options.EnvFilePath != "" {
 		data, err := godotenv.Read(options.EnvFilePath)

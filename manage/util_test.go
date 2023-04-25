@@ -29,7 +29,7 @@ func TestGetContainerName(t *testing.T) {
 }
 
 func TestBuildContainerOptions(t *testing.T) {
-	t.Run("Simple", func(t *testing.T) {
+	t.Run("With volumes", func(t *testing.T) {
 		actual, err := buildContainerOptions(
 			&Config{
 				Network: "test-net",
@@ -70,9 +70,7 @@ func TestBuildContainerOptions(t *testing.T) {
 			},
 			"test-image",
 			"test-container",
-			&Options{
-				PortOffset: 20,
-			},
+			&Options{},
 		)
 
 		assert.NoError(t, err)
@@ -83,8 +81,8 @@ func TestBuildContainerOptions(t *testing.T) {
 				Name:          "test-container",
 				RestartPolicy: core.RestartAlways,
 				Ports: []core.Mapping{
-					{Source: "5021", Target: "11"},
-					{Source: "5022", Target: "12"},
+					{Source: "5001", Target: "11"},
+					{Source: "5002", Target: "12"},
 				},
 			},
 			actual,

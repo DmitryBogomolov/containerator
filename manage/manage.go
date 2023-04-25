@@ -35,7 +35,6 @@ type Options struct {
 	Tag         string // Image tag; if not set newest image is selected
 	Force       bool   // If set running container is replaced
 	Remove      bool   // If set running container is removed
-	PortOffset  int    // Host machine port offset
 	EnvFilePath string // Path to file with additional environment variables
 }
 
