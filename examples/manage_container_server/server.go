@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
-	"os"
 
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/registry"
@@ -41,26 +40,25 @@ func sendJSON(value any, w http.ResponseWriter) {
 func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
+		registry.Refresh()
 		item, err := registry.GetItem(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		ret, err := invokeManage(cli, item.ConfigPath, r)
+		data, err := invokeManage(cli, item.ConfigPath, r)
 		if err != nil {
-			if os.IsNotExist(err) {
-				registry.Refresh()
-			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		sendJSON(ret, w)
+		sendJSON(data, w)
 	})
 }
 
 func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
+		registry.Refresh()
 		item, err := registry.GetItem(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -68,9 +66,6 @@ func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
 		}
 		data, err := getImageInfo(cli, item.ConfigPath)
 		if err != nil {
-			if os.IsNotExist(err) {
-				registry.Refresh()
-			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
