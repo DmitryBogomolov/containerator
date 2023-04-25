@@ -3,5 +3,5 @@ container_name: tester
 ports:
 - 9001: 80
 volumes:
-- ./html1: /usr/share/nginx/html
+- ./html: /usr/share/nginx/html
 
