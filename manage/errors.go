@@ -18,6 +18,20 @@ func (err NoContainerError) Container() string {
 	return err.container
 }
 
+// NoImageError is returned when image is not found.
+type NoImageError struct {
+	image string
+}
+
+func (err NoImageError) Error() string {
+	return fmt.Sprintf("image '%s' is not found", err.image)
+}
+
+// Image returns image name.
+func (err NoImageError) Image() string {
+	return err.image
+}
+
 // ContainerAlreadyRunningError is returned on attempt to run container when similar container is already running.
 type ContainerAlreadyRunningError struct {
 	container string

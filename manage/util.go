@@ -43,7 +43,14 @@ func findImage(cli client.ImageAPIClient, name string, tag string) (core.Image, 
 	if tag != "" {
 		imageName += ":" + tag
 	}
-	return core.FindImageByName(cli.(client.ImageAPIClient), imageName)
+	image, err := core.FindImageByName(cli.(client.ImageAPIClient), imageName)
+	if err != nil {
+		return nil, err
+	}
+	if image == nil {
+		return nil, &NoImageError{imageName}
+	}
+	return image, nil
 }
 
 func buildContainerOptions(
