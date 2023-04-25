@@ -37,7 +37,7 @@ func sendJSON(value any, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
+func makeAPIManageContainerHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
 		registry.Refresh()
@@ -55,7 +55,7 @@ func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
 	})
 }
 
-func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
+func makeAPIImageInfoHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
 		registry.Refresh()
@@ -101,13 +101,21 @@ func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
 	server := mux.NewRouter()
 
 	server.NewRoute().
-		Path("/static/index.js").Methods(http.MethodGet).Handler(makeIndexScriptHandler())
+		Path("/static/index.js").
+		Methods(http.MethodGet).
+		Handler(makeIndexScriptHandler())
 	server.NewRoute().
-		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(makeAPIManageHandler(registry, cli))
+		Path("/api/manage-container/{name}").
+		Methods(http.MethodPost).
+		Handler(makeAPIManageContainerHandler(registry, cli))
 	server.NewRoute().
-		Path("/api/info/{name}").Methods(http.MethodGet).Handler(makeAPIInfoHandler(registry, cli))
+		Path("/api/image-info/{name}").
+		Methods(http.MethodGet).
+		Handler(makeAPIImageInfoHandler(registry, cli))
 	server.NewRoute().
-		Path("/").Methods(http.MethodGet).Handler(makeRootPageHandler(registry))
+		Path("/").
+		Methods(http.MethodGet).
+		Handler(makeRootPageHandler(registry))
 
 	return attachLoggerToHandler(server), nil
 }
