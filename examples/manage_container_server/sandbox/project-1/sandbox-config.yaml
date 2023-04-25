@@ -1,5 +1,5 @@
 image_name: nginx
-container_name: tester
+container_name: tester-1
 ports:
 - 9001: 80
 volumes:
