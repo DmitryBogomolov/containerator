@@ -80,7 +80,7 @@ func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
 
 func makeRootPageHandler(registry *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := pageTemplate.Execute(w, registry)
+		err := pageTemplate.Execute(w, registry.Items())
 		if err != nil {
 			logger.Printf("template error: %+v\n", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

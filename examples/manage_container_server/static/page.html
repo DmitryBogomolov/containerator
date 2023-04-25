@@ -21,34 +21,29 @@
                 <thead class="thead-light">
                     <tr>
                         <th>Name</th>
-                        <th>Mode</th>
                         <th>Tag</th>
-                        <th>Update</th>
                         <th>Force</th>
+                        <th>Update</th>
                         <th>Remove</th>
                     </tr>
                 </thead>
                 <tbody>
-                {{ range .Items }}
+                {{ range . }}
                     <tr data-id="{{ .Name }}">
                         <td>{{ .Name }}</td>
-                        <td>
-                            <select class="cmd-modes custom-select">
-                            </select>
-                        </td>
                         <td>
                             <select class="cmd-tags custom-select">
                                 <option value="" selected>Latest</option>
                             </select>
                         </td>
                         <td>
-                            <button class="cmd-update btn">Update</button>
-                        </td>
-                        <td>
                             <div class="custom-control custom-checkbox">
                                 <input class="cmd-force custom-control-input" type="checkbox" id="check-{{ .Name }}"></input>
                                 <label class="custom-control-label" for="check-{{ .Name }}">Force</label>
                             </div>
+                        </td>
+                        <td>
+                            <button class="cmd-update btn">Update</button>
                         </td>
                         <td>
                             <button class="cmd-remove btn">Remove</button>

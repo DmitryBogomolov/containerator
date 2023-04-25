@@ -24,7 +24,7 @@ type Item struct {
 
 type Registry struct {
 	workspace     string
-	Items         []Item
+	items         []Item
 	refreshHandle sync.WaitGroup
 	refreshLock   sync.Mutex
 	refreshState  bool
@@ -66,7 +66,7 @@ func invokeRegistryRefresh(registry *Registry) {
 		registry.refreshState = true
 		registry.refreshHandle.Add(1)
 		go func() {
-			registry.Items = collectItems(registry.workspace)
+			registry.items = collectItems(registry.workspace)
 			registry.refreshHandle.Done()
 			registry.refreshState = false
 		}()
@@ -87,8 +87,12 @@ func (registry *Registry) Refresh() {
 	registry.refreshHandle.Wait()
 }
 
+func (registry *Registry) Items() []Item {
+	return registry.items
+}
+
 func (registry *Registry) GetItem(name string) (Item, error) {
-	for _, item := range registry.Items {
+	for _, item := range registry.items {
 		if item.Name == name {
 			return item, nil
 		}
