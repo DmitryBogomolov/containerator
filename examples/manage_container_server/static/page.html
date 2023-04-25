@@ -1,57 +1,57 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta name="theme-color" content="#000000">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
-        <title>Manage</title>
-        <style>
-            .reduced-width {
-                width: 90%;
-            }
-        </style>
-    </head>
-    <body>
-        <div>
-            <table class="table table-hover">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Tag</th>
-                        <th>Force</th>
-                        <th>Update</th>
-                        <th>Remove</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {{ range . }}
-                    <tr data-id="{{ .Name }}">
-                        <td>{{ .Name }}</td>
-                        <td>
-                            <select class="cmd-tags custom-select">
-                            </select>
-                        </td>
-                        <td>
-                            <div class="custom-control custom-checkbox">
-                                <input class="cmd-force custom-control-input" type="checkbox" id="check-{{ .Name }}"></input>
-                                <label class="custom-control-label" for="check-{{ .Name }}">Force</label>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="cmd-update btn">Update</button>
-                        </td>
-                        <td>
-                            <button class="cmd-remove btn">Remove</button>
-                        </td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-        <script type="text/javascript" src="/static/index.js"></script>
-    </body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    <title>Manage</title>
+    <style>
+        .reduced-width {
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <table class="table table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Tag</th>
+                    <th>Force</th>
+                    <th>Update</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{ range . }}
+                <tr data-id="{{ .Name }}">
+                    <td>{{ .Name }}</td>
+                    <td>
+                        <select class="cmd-tags custom-select">
+                        </select>
+                    </td>
+                    <td>
+                        <div class="custom-control custom-checkbox">
+                            <input class="cmd-force custom-control-input" type="checkbox" id="check-{{ .Name }}"></input>
+                            <label class="custom-control-label" for="check-{{ .Name }}">Force</label>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="cmd-update btn">Update</button>
+                    </td>
+                    <td>
+                        <button class="cmd-remove btn">Remove</button>
+                    </td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+    <script type="text/javascript" src="/static/index.js"></script>
+</body>
 </html>
