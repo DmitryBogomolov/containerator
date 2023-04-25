@@ -1,7 +1,6 @@
 package manage
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
@@ -16,26 +15,6 @@ func findIndex[T comparable](item T, list []T) int {
 		}
 	}
 	return -1
-}
-
-// NotValidModeError indicates that specified mode is not found amoung config modes.
-type NotValidModeError struct {
-	mode  string
-	modes []string
-}
-
-func (err *NotValidModeError) Error() string {
-	return fmt.Sprintf("mode '%s' is not valid", err.mode)
-}
-
-// Mode returns mode.
-func (err *NotValidModeError) Mode() string {
-	return err.mode
-}
-
-// Modes returns config modes.
-func (err *NotValidModeError) Modes() []string {
-	return append([]string(nil), err.modes...)
 }
 
 func getContainerName(conf *Config, postfix string) string {
