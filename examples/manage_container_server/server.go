@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/projects"
 	"github.com/docker/docker/client"
 	"github.com/gorilla/mux"
 )
@@ -37,18 +38,18 @@ func sendJSON(value any, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func makeAPIManageHandler(cache *projectsCache, cli any) http.Handler {
+func makeAPIManageHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := cache.get(targetName)
+		item, err := cache.Get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		ret, err := invokeManage(cli, item.configPath, r)
+		ret, err := invokeManage(cli, item.ConfigPath, r)
 		if err != nil {
 			if os.IsNotExist(err) {
-				cache.refresh()
+				cache.Refresh()
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -57,18 +58,18 @@ func makeAPIManageHandler(cache *projectsCache, cli any) http.Handler {
 	})
 }
 
-func makeAPIInfoHandler(cache *projectsCache, cli any) http.Handler {
+func makeAPIInfoHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := cache.get(targetName)
+		item, err := cache.Get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		data, err := getImageInfo(cli, item.configPath)
+		data, err := getImageInfo(cli, item.ConfigPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				cache.refresh()
+				cache.Refresh()
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -77,7 +78,7 @@ func makeAPIInfoHandler(cache *projectsCache, cli any) http.Handler {
 	})
 }
 
-func makeRootPageHandler(cache *projectsCache) http.Handler {
+func makeRootPageHandler(cache *projects.ProjectsCache) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := pageTemplate.Execute(w, cache)
 		if err != nil {
@@ -95,7 +96,7 @@ func attachLoggerToHandler(h http.Handler) http.Handler {
 }
 
 func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
-	cache := newProjectsCache(pathToWorkspace)
+	cache := projects.NewProjectsCache(pathToWorkspace)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {

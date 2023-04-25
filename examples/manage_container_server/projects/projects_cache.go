@@ -1,4 +1,4 @@
-package main
+package projects
 
 import (
 	"crypto/sha256"
@@ -16,14 +16,14 @@ const (
 	refreshInterval = 10 * time.Second
 )
 
-type projectItem struct {
+type ProjectItem struct {
 	Name       string
-	configPath string
+	ConfigPath string
 }
 
-type projectsCache struct {
+type ProjectsCache struct {
 	workspace string
-	Projects  []projectItem
+	Projects  []ProjectItem
 	batcher   *batcher.Batcher
 }
 
@@ -40,34 +40,34 @@ func collectProjects(pattern string) []string {
 	return nil
 }
 
-func (obj *projectsCache) refreshCore() {
+func (obj *ProjectsCache) refreshCore() {
 	matches := collectProjects(filepath.Join(obj.workspace, "*", "*.yaml"))
-	items := make([]projectItem, len(matches))
+	items := make([]ProjectItem, len(matches))
 	for i, m := range matches {
-		items[i] = projectItem{
+		items[i] = ProjectItem{
 			Name:       filepath.Base(filepath.Dir(m)),
-			configPath: m,
+			ConfigPath: m,
 		}
 	}
 	obj.Projects = items
 }
 
-func (obj *projectsCache) refresh() {
+func (obj *ProjectsCache) Refresh() {
 	obj.batcher.Invoke()
 	logger.Printf("Refresh\n  %s\n", strings.Join(obj.getProjectNames(), ", "))
 }
 
-func (obj *projectsCache) get(name string) (projectItem, error) {
+func (obj *ProjectsCache) Get(name string) (ProjectItem, error) {
 	for i, item := range obj.Projects {
 		if item.Name == name {
 			return obj.Projects[i], nil
 		}
 	}
-	var notFound projectItem
+	var notFound ProjectItem
 	return notFound, fmt.Errorf("project '%s' is not found", name)
 }
 
-func (obj *projectsCache) getProjectNames() []string {
+func (obj *ProjectsCache) getProjectNames() []string {
 	names := make([]string, len(obj.Projects))
 	for i, p := range obj.Projects {
 		names[i] = p.Name
@@ -75,22 +75,22 @@ func (obj *projectsCache) getProjectNames() []string {
 	return names
 }
 
-func (obj *projectsCache) refreshByInterval(ch <-chan time.Time) {
+func (obj *ProjectsCache) refreshByInterval(ch <-chan time.Time) {
 	for range ch {
-		obj.refresh()
+		obj.Refresh()
 	}
 }
 
-func (obj *projectsCache) beginIntervalRefresh(d time.Duration) {
+func (obj *ProjectsCache) beginIntervalRefresh(d time.Duration) {
 	ticker := time.NewTicker(d)
 	go obj.refreshByInterval(ticker.C)
 }
 
-func newProjectsCache(workspace string) *projectsCache {
-	cache := &projectsCache{}
+func NewProjectsCache(workspace string) *ProjectsCache {
+	cache := &ProjectsCache{}
 	cache.workspace = workspace
 	cache.batcher = batcher.NewBatcher(cache.refreshCore)
-	cache.refresh()
+	cache.Refresh()
 	cache.beginIntervalRefresh(refreshInterval)
 	return cache
 }
