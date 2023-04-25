@@ -3,6 +3,7 @@ package manage
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -100,5 +101,27 @@ func TestReadConfig(t *testing.T) {
 		assert.Error(t, err, "error")
 		assert.Equal(t, (err.(*os.PathError)).Path, "test.yaml", "error data")
 		assert.Equal(t, (*Config)(nil), config, "config")
+	})
+
+	t.Run("Process mounts", func(t *testing.T) {
+		testContent := strings.Join([]string{
+			"volumes:",
+			"- /a/b: /dir1",
+			"- ./a/b: /dir2",
+		}, "\n")
+		testFile := "test.yaml"
+		ioutil.WriteFile(testFile, []byte(testContent), os.ModePerm)
+		defer os.Remove(testFile)
+
+		config, err := ReadConfig(testFile)
+
+		assert.NoError(t, err, "error")
+		curDir, _ := filepath.Abs(".")
+		assert.Equal(t, &Config{
+			Volumes: []core.Mapping{
+				{Source: "/a/b", Target: "/dir1"},
+				{Source: filepath.Join(curDir, "./a/b"), Target: "/dir2"},
+			},
+		}, config, "config")
 	})
 }
