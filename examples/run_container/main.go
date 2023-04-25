@@ -21,8 +21,6 @@ func run() error {
 	flag.Var(ports, "port", "port")
 	env := core.NewMappingListFlag("=", true)
 	flag.Var(env, "env", "environment")
-	var envFile string
-	flag.StringVar(&envFile, "env-file", "", "env file")
 	var restart string
 	flag.StringVar(&restart, "restart", "", "restart policy")
 	var network string
@@ -40,28 +38,27 @@ func run() error {
 		return err
 	}
 
-	options := &core.RunContainerOptions{
-		Image: imageName,
-		Name:  containerName,
+	options := core.RunContainerOptions{
+		Image:         imageName,
+		Name:          containerName,
+		Network:       network,
+		RestartPolicy: core.RestartPolicy(restart),
+		Ports:         ports.Get(),
+		Volumes:       volumes.Get(),
+		Env:           env.Get(),
 	}
-	options.Volumes = volumes.Get()
-	options.Ports = ports.Get()
-	options.Env = env.Get()
-	options.RestartPolicy = core.RestartPolicy(restart)
-	options.Network = network
-
-	container, err := core.RunContainer(cli, options)
+	container, err := core.RunContainer(cli, &options)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s %s\n", imageName, container.ShortID(), container.Name(), container.State())
+	fmt.Printf("%s/%s (%s): %s\n", container.Name(), container.ShortID(), imageName, container.State())
 
 	return nil
 }
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("%+v\n", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
