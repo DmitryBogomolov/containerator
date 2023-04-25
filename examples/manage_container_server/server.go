@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
 	"github.com/gorilla/mux"
 
 	"github.com/docker/docker/client"

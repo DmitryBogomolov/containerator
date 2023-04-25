@@ -3,7 +3,7 @@ Program manage_container_server is an example of http server
 that manages several container projects.
 
 TODO:
- * add command status popups
+  - add command status popups
 */
 package main
 
@@ -14,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
 )
 
 const defaultPort = 4001

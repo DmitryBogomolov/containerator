@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DmitryBogomolov/containerator/batcher"
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
 )
 
 const (
@@ -35,7 +36,7 @@ func collectProjects(pattern string) []string {
 		logger.Printf("%+v", err)
 		time.Sleep(3 * time.Second)
 	}
-	logger.Panicln("failed to refresh projects")
+	logger.Panicf("failed to refresh projects\n")
 	return nil
 }
 
