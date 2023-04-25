@@ -101,6 +101,5 @@ func run() error {
 func main() {
 	if err := run(); err != nil {
 		log.Fatalln(err)
-		os.Exit(1)
 	}
 }
