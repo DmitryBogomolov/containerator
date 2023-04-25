@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
-	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/projects"
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/registry"
 	"github.com/docker/docker/client"
 	"github.com/gorilla/mux"
 )
@@ -38,10 +38,10 @@ func sendJSON(value any, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func makeAPIManageHandler(cache *projects.ProjectsCache, cli any) http.Handler {
+func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := cache.Get(targetName)
+		item, err := registry.Get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -49,7 +49,7 @@ func makeAPIManageHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 		ret, err := invokeManage(cli, item.ConfigPath, r)
 		if err != nil {
 			if os.IsNotExist(err) {
-				cache.Refresh()
+				registry.Refresh()
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -58,10 +58,10 @@ func makeAPIManageHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 	})
 }
 
-func makeAPIInfoHandler(cache *projects.ProjectsCache, cli any) http.Handler {
+func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := cache.Get(targetName)
+		item, err := registry.Get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -69,7 +69,7 @@ func makeAPIInfoHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 		data, err := getImageInfo(cli, item.ConfigPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				cache.Refresh()
+				registry.Refresh()
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -78,9 +78,9 @@ func makeAPIInfoHandler(cache *projects.ProjectsCache, cli any) http.Handler {
 	})
 }
 
-func makeRootPageHandler(cache *projects.ProjectsCache) http.Handler {
+func makeRootPageHandler(registry *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := pageTemplate.Execute(w, cache)
+		err := pageTemplate.Execute(w, registry)
 		if err != nil {
 			logger.Printf("template error: %+v\n", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -96,7 +96,7 @@ func attachLoggerToHandler(h http.Handler) http.Handler {
 }
 
 func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
-	cache := projects.NewProjectsCache(pathToWorkspace)
+	registry := registry.New(pathToWorkspace)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -108,11 +108,11 @@ func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
 	server.NewRoute().
 		Path("/static/index.js").Methods(http.MethodGet).Handler(makeIndexScriptHandler())
 	server.NewRoute().
-		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(makeAPIManageHandler(cache, cli))
+		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(makeAPIManageHandler(registry, cli))
 	server.NewRoute().
-		Path("/api/info/{name}").Methods(http.MethodGet).Handler(makeAPIInfoHandler(cache, cli))
+		Path("/api/info/{name}").Methods(http.MethodGet).Handler(makeAPIInfoHandler(registry, cli))
 	server.NewRoute().
-		Path("/").Methods(http.MethodGet).Handler(makeRootPageHandler(cache))
+		Path("/").Methods(http.MethodGet).Handler(makeRootPageHandler(registry))
 
 	return attachLoggerToHandler(server), nil
 }
