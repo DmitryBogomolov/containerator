@@ -1,23 +1,32 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"html/template"
 	"net/http"
-	"os"
 
-	"github.com/gorilla/mux"
-
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
+	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/registry"
 	"github.com/docker/docker/client"
+	"github.com/gorilla/mux"
 )
 
-func indexScriptHandler() http.Handler {
+//go:embed static/index.js
+var indexContent string
+
+//go:embed static/page.html
+var pageContent string
+var pageTemplate = template.Must(template.New("/").Parse(pageContent))
+
+func makeIndexScriptHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/index.js")
+		w.Header().Add("Content-Type", "application/javascript")
+		w.Write([]byte(indexContent))
 	})
 }
 
-func sendJSON(value interface{}, w http.ResponseWriter) {
+func sendJSON(value any, w http.ResponseWriter) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -28,39 +37,17 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
+func makeAPIManageContainerHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		item, err := cache.get(vars["name"])
+		targetName := mux.Vars(r)["name"]
+		registry.Refresh()
+		item, err := registry.GetItem(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		ret, err := invokeManage(cli, item.configPath, r)
+		data, err := invokeManage(cli, item.ConfigPath, r)
 		if err != nil {
-			if os.IsNotExist(err) {
-				cache.refresh()
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		sendJSON(ret, w)
-	})
-}
-
-func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		item, err := cache.get(vars["name"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		data, err := getImageInfo(cli, item.configPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				cache.refresh()
-			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -68,25 +55,43 @@ func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 	})
 }
 
-func rootPageHandler(cache *projectsCache) http.Handler {
-	tmpl := template.Must(template.ParseFiles("page.html"))
+func makeAPIImageInfoHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl.Execute(w, cache)
+		targetName := mux.Vars(r)["name"]
+		registry.Refresh()
+		item, err := registry.GetItem(targetName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		data, err := getImageInfo(cli, item.ConfigPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		sendJSON(data, w)
+	})
+}
+
+func makeRootPageHandler(registry *registry.Registry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := pageTemplate.Execute(w, registry.Items())
 		if err != nil {
 			logger.Printf("template error: %+v\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 }
 
-func wrapLogger(h http.Handler) http.Handler {
+func attachLoggerToHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%-5s %s\n", r.Method, r.RequestURI)
 		h.ServeHTTP(w, r)
 	})
 }
 
-func setupServer(pathToWorkspace string) (http.Handler, error) {
-	cache := newProjectsCache(pathToWorkspace)
+func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
+	registry := registry.New(pathToWorkspace)
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -96,13 +101,21 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 	server := mux.NewRouter()
 
 	server.NewRoute().
-		Path("/static/index.js").Methods(http.MethodGet).Handler(indexScriptHandler())
+		Path("/static/index.js").
+		Methods(http.MethodGet).
+		Handler(makeIndexScriptHandler())
 	server.NewRoute().
-		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(apiManageHandler(cache, cli))
+		Path("/api/manage-container/{name}").
+		Methods(http.MethodPost).
+		Handler(makeAPIManageContainerHandler(registry, cli))
 	server.NewRoute().
-		Path("/api/info/{name}").Methods(http.MethodGet).Handler(apiInfoHandler(cache, cli))
+		Path("/api/image-info/{name}").
+		Methods(http.MethodGet).
+		Handler(makeAPIImageInfoHandler(registry, cli))
 	server.NewRoute().
-		Path("/").Methods(http.MethodGet).Handler(rootPageHandler(cache))
+		Path("/").
+		Methods(http.MethodGet).
+		Handler(makeRootPageHandler(registry))
 
-	return wrapLogger(server), nil
+	return attachLoggerToHandler(server), nil
 }

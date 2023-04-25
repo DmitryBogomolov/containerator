@@ -7,27 +7,62 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
+	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
 
+func makeConfig(configPath string, containerName string, imageName string) (*manage.Config, error) {
+	config, err := manage.ReadConfig(configPath)
+	if err != nil && os.IsNotExist(err) {
+		config = &manage.Config{}
+		err = nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if imageName != "" {
+		config.ImageName = imageName
+	}
+	if containerName != "" {
+		config.ContainerName = containerName
+	}
+	if config.ImageName == "" {
+		return nil, errors.New("image is not defined")
+	}
+	return config, err
+}
+
+func makeOptions(postfix string, tag string, force bool, remove bool, configPath string) *manage.Options {
+	options := manage.Options{
+		Postfix: postfix,
+		Tag:     tag,
+		Force:   force,
+		Remove:  remove,
+	}
+	return &options
+}
+
+func displayContainer(container core.Container) string {
+	return fmt.Sprintf("%s(%s)", container.Name(), container.ShortID())
+}
+
 func run() error {
-	var configPathOption string
-	flag.StringVar(&configPathOption, "config", manage.DefaultConfigName, "configuration file")
-	var imageRepo string
-	flag.StringVar(&imageRepo, "image", "", "image repo")
+	var configPath string
+	flag.StringVar(&configPath, "config", manage.DefaultConfigName, "configuration file")
+	var imageName string
+	flag.StringVar(&imageName, "image", "", "image name")
 	var containerName string
 	flag.StringVar(&containerName, "container", "", "container name")
-	var postfixOption string
-	flag.StringVar(&postfixOption, "postfix", "", "postfix")
-	var tagOption string
-	flag.StringVar(&tagOption, "tag", "", "image tag")
-	var removeOption bool
-	flag.BoolVar(&removeOption, "remove", false, "remove container")
-	var forceOption bool
-	flag.BoolVar(&forceOption, "force", false, "force container creation")
+	var postfix string
+	flag.StringVar(&postfix, "postfix", "", "postfix")
+	var tag string
+	flag.StringVar(&tag, "tag", "", "image tag")
+	var remove bool
+	flag.BoolVar(&remove, "remove", false, "remove container")
+	var force bool
+	flag.BoolVar(&force, "force", false, "force container creation")
 
 	flag.Parse()
 
@@ -36,61 +71,35 @@ func run() error {
 		return err
 	}
 
-	config, err := manage.ReadConfig(configPathOption)
+	config, err := makeConfig(configPath, containerName, imageName)
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		config = &manage.Config{}
+		return err
 	}
-	if imageRepo != "" {
-		config.ImageName = imageRepo
-	}
-	if containerName != "" {
-		config.ContainerName = containerName
-	}
-
-	if config.ImageName == "" {
-		return errors.New("image repo is not defined")
-	}
-
-	options := &manage.Options{
-		Postfix:     postfixOption,
-		Tag:         tagOption,
-		Force:       forceOption,
-		Remove:      removeOption,
-		EnvFilePath: filepath.Join(filepath.Dir(configPathOption), fmt.Sprintf("%s.list", postfixOption)),
-	}
+	options := makeOptions(postfix, tag, force, remove, configPath)
 	container, err := manage.RunContainer(cli, config, options)
 
 	if options.Remove {
-		if _, ok := err.(*manage.NoContainerError); ok {
-			log.Println("There is no container")
-			return nil
-		}
 		if err != nil {
 			return err
 		}
-		log.Println("Container is removed")
+		log.Printf("%s: removed\n", displayContainer(container))
 		return nil
 	}
 
 	if _, ok := err.(*manage.ContainerAlreadyRunningError); ok {
-		log.Println("Container is already running")
+		log.Printf("%s: already running\n", displayContainer(container))
 		return nil
 	}
-
 	if err != nil {
 		return err
 	}
-	log.Printf("Container: %s %s\n", container.Name(), container.ShortID())
+	log.Printf("%s: %s\n", displayContainer(container), container.State())
 
 	return nil
 }
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("%+v\n", err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 }

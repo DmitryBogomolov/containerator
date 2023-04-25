@@ -1,0 +1,7 @@
+image_name: nginx
+container_name: tester-2
+ports:
+- 9002: 80
+volumes:
+- ./html: /usr/share/nginx/html
+

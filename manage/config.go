@@ -2,6 +2,7 @@ package manage
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/DmitryBogomolov/containerator/core"
 	"gopkg.in/yaml.v2"
@@ -27,5 +28,19 @@ func ReadConfig(pathToFile string) (*Config, error) {
 	}
 	var cfg Config
 	err = yaml.Unmarshal(bytes, &cfg)
+	if err == nil {
+		curDir, _ := filepath.Abs(filepath.Dir(pathToFile))
+		processConfig(&cfg, curDir)
+	}
 	return &cfg, err
+}
+
+func processConfig(cfg *Config, dir string) {
+	for i, mapping := range cfg.Volumes {
+		hostPath := filepath.Clean(mapping.Source)
+		if !filepath.IsAbs(hostPath) {
+			hostPath = filepath.Join(dir, hostPath)
+		}
+		cfg.Volumes[i].Source = hostPath
+	}
 }

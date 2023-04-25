@@ -31,12 +31,10 @@ func updateContainer(
 
 // Options contains additional arguments for Manage function.
 type Options struct {
-	Postfix     string // Container name postfix
-	Tag         string // Image tag; if not set newest image is selected
-	Force       bool   // If set running container is replaced
-	Remove      bool   // If set running container is removed
-	PortOffset  int    // Host machine port offset
-	EnvFilePath string // Path to file with additional environment variables
+	Postfix string // Container name postfix
+	Tag     string // Image tag; if not set newest image is selected
+	Force   bool   // If set running container is replaced
+	Remove  bool   // If set running container is removed
 }
 
 // DefaultConfigName defines default name of config file.
@@ -51,10 +49,7 @@ func RunContainer(cli interface{}, cfg *Config, options *Options) (core.Containe
 	containerCli := cli.(client.ContainerAPIClient)
 	currentContainer, err := core.FindContainerByName(containerCli, containerName)
 	if err != nil {
-		if _, ok := err.(*core.ContainerNotFoundError); !ok {
-			return nil, err
-		}
-		currentContainer = nil
+		return nil, err
 	}
 
 	if options.Remove {
