@@ -46,7 +46,7 @@ func (mappingListFlag *_MappingListFlag) Set(value string) error {
 }
 
 func (mappingListFlag *_MappingListFlag) Get() []Mapping {
-	return append([]Mapping(nil), mappingListFlag.mappings...)
+	return mappingListFlag.mappings
 }
 
 /*
