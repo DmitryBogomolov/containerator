@@ -62,6 +62,7 @@ func buildContainerOptions(
 		RestartPolicy: core.RestartAlways,
 		Network:       cfg.Network,
 		Volumes:       cfg.Volumes,
+		Ports:         cfg.Ports,
 		Env:           cfg.Env,
 	}
 	if options.PortOffset != 0 && len(cfg.Ports) > 0 {
