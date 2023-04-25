@@ -5,5 +5,5 @@ Example of http server that uses [containerator](../../README.md) functions to r
 *Workspace* is a directory that contains projects - directories with *config.yaml* files.
 
 ```bash
-./manage_container_server --port 4001 --workspace /path/to/dir
+./manage_container_server --port 10001 --workspace ./sandbox
 ```
