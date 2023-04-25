@@ -41,7 +41,7 @@ func sendJSON(value any, w http.ResponseWriter) {
 func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := registry.Get(targetName)
+		item, err := registry.GetItem(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -61,7 +61,7 @@ func makeAPIManageHandler(registry *registry.Registry, cli any) http.Handler {
 func makeAPIInfoHandler(registry *registry.Registry, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		targetName := mux.Vars(r)["name"]
-		item, err := registry.Get(targetName)
+		item, err := registry.GetItem(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

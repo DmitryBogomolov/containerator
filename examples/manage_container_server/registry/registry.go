@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/DmitryBogomolov/containerator/batcher"
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
 )
 
 const (
-	refreshInterval = 10 * time.Second
+	registryRefreshInterval   = 10 * time.Second
+	collectProjectsRetryCount = 3
 )
 
 type Item struct {
@@ -22,13 +23,15 @@ type Item struct {
 }
 
 type Registry struct {
-	workspace string
-	Projects  []Item
-	batcher   *batcher.Batcher
+	workspace     string
+	Items         []Item
+	refreshHandle sync.WaitGroup
+	refreshLock   sync.Mutex
+	refreshState  bool
 }
 
-func collectProjects(pattern string) []string {
-	for i := 0; i < 3; i++ {
+func collectConfigFiles(pattern string) []string {
+	for i := 0; i < collectProjectsRetryCount; i++ {
 		matches, err := filepath.Glob(pattern)
 		if err == nil {
 			return matches
@@ -40,58 +43,66 @@ func collectProjects(pattern string) []string {
 	return nil
 }
 
-func (registry *Registry) refreshCore() {
-	matches := collectProjects(filepath.Join(registry.workspace, "*", "*.yaml"))
-	items := make([]Item, len(matches))
-	for i, match := range matches {
+func collectItems(workspace string) []Item {
+	configFiles := collectConfigFiles(filepath.Join(workspace, "*", "*.yaml"))
+	items := make([]Item, len(configFiles))
+	names := make([]string, len(configFiles))
+	for i, configPath := range configFiles {
+		name := filepath.Base(filepath.Dir(configPath))
 		items[i] = Item{
-			Name:       filepath.Base(filepath.Dir(match)),
-			ConfigPath: match,
+			Name:       name,
+			ConfigPath: configPath,
 		}
+		names[i] = name
 	}
-	registry.Projects = items
+	logger.Printf("refresh\n  %s\n", strings.Join(names, ", "))
+	return items
+}
+
+func invokeRegistryRefresh(registry *Registry) {
+	registry.refreshLock.Lock()
+	defer registry.refreshLock.Unlock()
+	if !registry.refreshState {
+		registry.refreshState = true
+		registry.refreshHandle.Add(1)
+		go func() {
+			registry.Items = collectItems(registry.workspace)
+			registry.refreshHandle.Done()
+			registry.refreshState = false
+		}()
+	}
+}
+
+func runIntervalRefresh(registry *Registry, duration time.Duration) {
+	ticker := time.NewTicker(duration)
+	go func() {
+		for range ticker.C {
+			registry.Refresh()
+		}
+	}()
 }
 
 func (registry *Registry) Refresh() {
-	registry.batcher.Invoke()
-	logger.Printf("refresh\n  %s\n", strings.Join(registry.getProjectNames(), ", "))
+	invokeRegistryRefresh(registry)
+	registry.refreshHandle.Wait()
 }
 
-func (registry *Registry) Get(name string) (*Item, error) {
-	for i, item := range registry.Projects {
+func (registry *Registry) GetItem(name string) (Item, error) {
+	for _, item := range registry.Items {
 		if item.Name == name {
-			return &registry.Projects[i], nil
+			return item, nil
 		}
 	}
-	return nil, fmt.Errorf("project '%s' is not found", name)
-}
-
-func (registry *Registry) getProjectNames() []string {
-	names := make([]string, len(registry.Projects))
-	for i, p := range registry.Projects {
-		names[i] = p.Name
-	}
-	return names
-}
-
-func (registry *Registry) refreshByInterval(ch <-chan time.Time) {
-	for range ch {
-		registry.Refresh()
-	}
-}
-
-func (registry *Registry) beginIntervalRefresh(d time.Duration) {
-	ticker := time.NewTicker(d)
-	go registry.refreshByInterval(ticker.C)
+	return Item{}, fmt.Errorf("'%s' not found", name)
 }
 
 func New(workspace string) *Registry {
-	cache := &Registry{}
-	cache.workspace = workspace
-	cache.batcher = batcher.NewBatcher(cache.refreshCore)
-	cache.Refresh()
-	cache.beginIntervalRefresh(refreshInterval)
-	return cache
+	registry := Registry{
+		workspace: workspace,
+	}
+	registry.Refresh()
+	runIntervalRefresh(&registry, registryRefreshInterval)
+	return &registry
 }
 
 func getProjectID(configPath string) string {
