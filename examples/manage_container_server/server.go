@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -11,9 +12,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+//go:embed static/index.js
+var indexContent string
+
+//go:embed static/page.html
+var pageContent string
+var pageTemplate = template.Must(template.New("/").Parse(pageContent))
+
 func makeIndexScriptHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/index.js")
+		w.Header().Add("Content-Type", "application/javascript")
+		w.Write([]byte(indexContent))
 	})
 }
 
@@ -69,9 +78,8 @@ func makeAPIInfoHandler(cache *projectsCache, cli any) http.Handler {
 }
 
 func makeRootPageHandler(cache *projectsCache) http.Handler {
-	tmpl := template.Must(template.ParseFiles("./static/page.html"))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl.Execute(w, cache)
+		err := pageTemplate.Execute(w, cache)
 		if err != nil {
 			logger.Printf("template error: %+v\n", err)
 		}

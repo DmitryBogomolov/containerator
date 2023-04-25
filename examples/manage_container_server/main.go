@@ -20,25 +20,26 @@ import (
 
 const defaultPort = 4001
 
-func validateWorkspace(workspace string) error {
+func validateWorkspace(workspace string) (string, error) {
+	workspace, _ = filepath.Abs(workspace)
 	cwd, _ := os.Getwd()
 	stat, err := os.Stat(workspace)
 	if err == nil && !stat.IsDir() {
 		err = fmt.Errorf("'%s' is not a directory", workspace)
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 	abspath, _ := filepath.Abs(workspace)
 	relpath, err := filepath.Rel(cwd, abspath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if strings.HasPrefix(relpath, "..") {
-		return fmt.Errorf("'%s' is outside working directory", workspace)
+		return "", fmt.Errorf("'%s' is outside working directory", workspace)
 	}
 	logger.Printf("workspace: %s\n", workspace)
-	return nil
+	return workspace, nil
 }
 
 func runServer(port int, handler http.Handler) error {
@@ -57,8 +58,7 @@ func run() error {
 	flag.StringVar(&workspace, "workspace", "", "path to workspace")
 	flag.Parse()
 
-	workspace, _ = filepath.Abs(workspace)
-	err := validateWorkspace(workspace)
+	workspace, err := validateWorkspace(workspace)
 	if err != nil {
 		return err
 	}
