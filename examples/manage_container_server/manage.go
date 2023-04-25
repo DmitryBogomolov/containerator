@@ -20,59 +20,59 @@ func parseBool(value string) bool {
 func getTag(cli client.ImageAPIClient, container core.Container) string {
 	image, err := core.FindImageByID(cli, container.ImageID())
 	if err != nil {
-		return fmt.Sprintf("Error(%+v)", err)
+		return fmt.Sprintf("error(%+v)", err)
 	}
 	return image.Tag()
 }
 
 func parseRequestBody(body io.ReadCloser) *manage.Options {
-	ret := &manage.Options{}
-	var data map[string]interface{}
-	if err := json.NewDecoder(body).Decode(&data); err != nil {
-		return ret
-	}
+	options := manage.Options{}
+	var data map[string]any
 	defer body.Close()
+	if err := json.NewDecoder(body).Decode(&data); err != nil {
+		return &options
+	}
 	if val, ok := data["postfix"]; ok {
 		if postfix, ok := val.(string); ok {
-			ret.Postfix = postfix
+			options.Postfix = postfix
 		}
 	}
 	if val, ok := data["tag"]; ok {
 		if tag, ok := val.(string); ok {
-			ret.Tag = tag
+			options.Tag = tag
 		}
 	}
 	if val, ok := data["force"]; ok {
 		if force, ok := val.(bool); ok {
-			ret.Force = force
+			options.Force = force
 		}
 	}
 	if val, ok := data["remove"]; ok {
 		if remove, ok := val.(bool); ok {
-			ret.Remove = remove
+			options.Remove = remove
 		}
 	}
-	return ret
+	return &options
 }
 
-func invokeManage(cli interface{}, configPath string, r *http.Request) (map[string]string, error) {
+func invokeManage(cli any, configPath string, r *http.Request) (map[string]any, error) {
 	options := parseRequestBody(r.Body)
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return nil, err
 	}
-	cont, err := manage.RunContainer(cli, config, options)
+	container, err := manage.RunContainer(cli, config, options)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]string{
-		"name":  cont.Name(),
+	return map[string]any{
+		"name":  container.Name(),
 		"image": config.ImageName,
-		"tag":   getTag(cli.(client.ImageAPIClient), cont),
+		"tag":   getTag(cli.(client.ImageAPIClient), container),
 	}, nil
 }
 
-func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, error) {
+func getImageInfo(cli any, configPath string) (map[string]any, error) {
 	config, err := manage.ReadConfig(configPath)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func getImageInfo(cli interface{}, configPath string) (map[string]interface{}, e
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"tags": core.TransformSlice(images, func(image core.Image) string {
 			return image.Tag()
 		}),

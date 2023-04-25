@@ -26,7 +26,7 @@ func makeIndexScriptHandler() http.Handler {
 	})
 }
 
-func sendJSON(value interface{}, w http.ResponseWriter) {
+func sendJSON(value any, w http.ResponseWriter) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -39,8 +39,8 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 
 func makeAPIManageHandler(cache *projectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		item, err := cache.get(vars["name"])
+		targetName := mux.Vars(r)["name"]
+		item, err := cache.get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -59,8 +59,8 @@ func makeAPIManageHandler(cache *projectsCache, cli any) http.Handler {
 
 func makeAPIInfoHandler(cache *projectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		item, err := cache.get(vars["name"])
+		targetName := mux.Vars(r)["name"]
+		item, err := cache.get(targetName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -82,6 +82,7 @@ func makeRootPageHandler(cache *projectsCache) http.Handler {
 		err := pageTemplate.Execute(w, cache)
 		if err != nil {
 			logger.Printf("template error: %+v\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 }
