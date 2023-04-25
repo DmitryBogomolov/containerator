@@ -3,7 +3,6 @@ package manage
 import (
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/docker/docker/client"
-	"github.com/joho/godotenv"
 )
 
 func findIndex[T comparable](item T, list []T) int {
@@ -62,17 +61,6 @@ func buildContainerOptions(
 		Volumes:       cfg.Volumes,
 		Ports:         cfg.Ports,
 		Env:           cfg.Env,
-	}
-	if options.EnvFilePath != "" {
-		data, err := godotenv.Read(options.EnvFilePath)
-		if err != nil {
-			return nil, err
-		}
-		mappings := make([]core.Mapping, 0, len(data))
-		for key, val := range data {
-			mappings = append(mappings, core.Mapping{Source: key, Target: val})
-		}
-		result.Env = append(result.Env, mappings...)
 	}
 	return &result, nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
@@ -63,7 +62,6 @@ func invokeManage(cli interface{}, configPath string, r *http.Request) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	options.EnvFilePath = filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", options.Postfix))
 	cont, err := manage.RunContainer(cli, config, options)
 	if err != nil {
 		return nil, err

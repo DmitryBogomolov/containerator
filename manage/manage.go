@@ -31,11 +31,10 @@ func updateContainer(
 
 // Options contains additional arguments for Manage function.
 type Options struct {
-	Postfix     string // Container name postfix
-	Tag         string // Image tag; if not set newest image is selected
-	Force       bool   // If set running container is replaced
-	Remove      bool   // If set running container is removed
-	EnvFilePath string // Path to file with additional environment variables
+	Postfix string // Container name postfix
+	Tag     string // Image tag; if not set newest image is selected
+	Force   bool   // If set running container is replaced
+	Remove  bool   // If set running container is removed
 }
 
 // DefaultConfigName defines default name of config file.

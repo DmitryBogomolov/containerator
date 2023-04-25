@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/DmitryBogomolov/containerator/core"
 	"github.com/DmitryBogomolov/containerator/manage"
@@ -41,10 +40,6 @@ func makeOptions(postfix string, tag string, force bool, remove bool, configPath
 		Tag:     tag,
 		Force:   force,
 		Remove:  remove,
-	}
-	envFilePath := filepath.Join(filepath.Dir(configPath), fmt.Sprintf("%s.list", postfix))
-	if _, err := os.Stat(envFilePath); err == nil {
-		options.EnvFilePath = envFilePath
 	}
 	return &options
 }
