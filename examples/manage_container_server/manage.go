@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/DmitryBogomolov/containerator/core"
-
 	"github.com/DmitryBogomolov/containerator/manage"
 	"github.com/docker/docker/client"
 )
@@ -18,8 +17,8 @@ func parseBool(value string) bool {
 	return ret
 }
 
-func getTag(cli client.ImageAPIClient, cont core.Container) string {
-	image, err := core.FindImageByID(cli, cont.ImageID())
+func getTag(cli client.ImageAPIClient, container core.Container) string {
+	image, err := core.FindImageByID(cli, container.ImageID())
 	if err != nil {
 		return fmt.Sprintf("Error(%+v)", err)
 	}

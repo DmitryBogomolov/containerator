@@ -7,14 +7,13 @@ import (
 	"os"
 
 	"github.com/DmitryBogomolov/containerator/examples/manage_container_server/logger"
-	"github.com/gorilla/mux"
-
 	"github.com/docker/docker/client"
+	"github.com/gorilla/mux"
 )
 
-func indexScriptHandler() http.Handler {
+func makeIndexScriptHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/index.js")
+		http.ServeFile(w, r, "./static/index.js")
 	})
 }
 
@@ -29,7 +28,7 @@ func sendJSON(value interface{}, w http.ResponseWriter) {
 	w.Write([]byte("\n"))
 }
 
-func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
+func makeAPIManageHandler(cache *projectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		item, err := cache.get(vars["name"])
@@ -49,7 +48,7 @@ func apiManageHandler(cache *projectsCache, cli interface{}) http.Handler {
 	})
 }
 
-func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
+func makeAPIInfoHandler(cache *projectsCache, cli any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		item, err := cache.get(vars["name"])
@@ -69,8 +68,8 @@ func apiInfoHandler(cache *projectsCache, cli interface{}) http.Handler {
 	})
 }
 
-func rootPageHandler(cache *projectsCache) http.Handler {
-	tmpl := template.Must(template.ParseFiles("page.html"))
+func makeRootPageHandler(cache *projectsCache) http.Handler {
+	tmpl := template.Must(template.ParseFiles("./static/page.html"))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := tmpl.Execute(w, cache)
 		if err != nil {
@@ -79,14 +78,14 @@ func rootPageHandler(cache *projectsCache) http.Handler {
 	})
 }
 
-func wrapLogger(h http.Handler) http.Handler {
+func attachLoggerToHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%-5s %s\n", r.Method, r.RequestURI)
 		h.ServeHTTP(w, r)
 	})
 }
 
-func setupServer(pathToWorkspace string) (http.Handler, error) {
+func setupServerHandler(pathToWorkspace string) (http.Handler, error) {
 	cache := newProjectsCache(pathToWorkspace)
 
 	cli, err := client.NewEnvClient()
@@ -97,13 +96,13 @@ func setupServer(pathToWorkspace string) (http.Handler, error) {
 	server := mux.NewRouter()
 
 	server.NewRoute().
-		Path("/static/index.js").Methods(http.MethodGet).Handler(indexScriptHandler())
+		Path("/static/index.js").Methods(http.MethodGet).Handler(makeIndexScriptHandler())
 	server.NewRoute().
-		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(apiManageHandler(cache, cli))
+		Path("/api/manage/{name}").Methods(http.MethodPost).Handler(makeAPIManageHandler(cache, cli))
 	server.NewRoute().
-		Path("/api/info/{name}").Methods(http.MethodGet).Handler(apiInfoHandler(cache, cli))
+		Path("/api/info/{name}").Methods(http.MethodGet).Handler(makeAPIInfoHandler(cache, cli))
 	server.NewRoute().
-		Path("/").Methods(http.MethodGet).Handler(rootPageHandler(cache))
+		Path("/").Methods(http.MethodGet).Handler(makeRootPageHandler(cache))
 
-	return wrapLogger(server), nil
+	return attachLoggerToHandler(server), nil
 }
