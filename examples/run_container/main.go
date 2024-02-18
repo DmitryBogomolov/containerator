@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
@@ -42,7 +43,7 @@ func run() error {
 		Image:         imageName,
 		Name:          containerName,
 		Network:       network,
-		RestartPolicy: core.RestartPolicy(restart),
+		RestartPolicy: container.RestartPolicyMode(restart),
 		Ports:         ports.Get(),
 		Volumes:       volumes.Get(),
 		Env:           env.Get(),

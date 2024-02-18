@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/docker/docker/api/types/container"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -55,7 +56,7 @@ func TestBuildContainerOptions(t *testing.T) {
 		&core.RunContainerOptions{
 			Image:         "test-image",
 			Name:          "test-container",
-			RestartPolicy: core.RestartAlways,
+			RestartPolicy: container.RestartPolicyAlways,
 			Network:       "test-net",
 			Ports: []core.Mapping{
 				{Source: "5001", Target: "11"},
