@@ -30,7 +30,7 @@ func TestRunContainer(t *testing.T) {
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
@@ -56,7 +56,7 @@ func TestRunContainer(t *testing.T) {
 				&container.Config{Image: "image:1"},
 				&container.HostConfig{},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		expectedErr := errors.New("error-on-start")
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
@@ -105,7 +105,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
@@ -147,7 +147,7 @@ func TestRunContainer(t *testing.T) {
 				},
 				&container.HostConfig{},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
@@ -181,7 +181,7 @@ func TestRunContainer(t *testing.T) {
 					},
 				},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)
@@ -194,7 +194,7 @@ func TestRunContainer(t *testing.T) {
 		RunContainer(cli, &RunContainerOptions{
 			Image:         "image:1",
 			Name:          "container-1",
-			RestartPolicy: RestartOnFailure,
+			RestartPolicy: container.RestartPolicyOnFailure,
 		})
 	})
 
@@ -208,7 +208,7 @@ func TestRunContainer(t *testing.T) {
 					NetworkMode: container.NetworkMode("test-net"),
 				},
 				nil, nil, "container-1").
-			Return(container.ContainerCreateCreatedBody{ID: "cid1"}, nil)
+			Return(container.CreateResponse{ID: "cid1"}, nil)
 		cli.EXPECT().
 			ContainerStart(gomock.Any(), "cid1", gomock.Any()).
 			Return(nil)

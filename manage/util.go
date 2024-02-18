@@ -2,6 +2,7 @@ package manage
 
 import (
 	"github.com/DmitryBogomolov/containerator/core"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
@@ -56,7 +57,7 @@ func buildContainerOptions(
 	result := core.RunContainerOptions{
 		Image:         imageName,
 		Name:          containerName,
-		RestartPolicy: core.RestartAlways,
+		RestartPolicy: container.RestartPolicyAlways,
 		Network:       cfg.Network,
 		Volumes:       cfg.Volumes,
 		Ports:         cfg.Ports,

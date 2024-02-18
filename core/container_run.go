@@ -12,13 +12,13 @@ import (
 
 // RunContainerOptions contains options used to create and start container.
 type RunContainerOptions struct {
-	Image         string        `json:"image,omitempty" yaml:",omitempty"`          // Image name; required
-	Name          string        `json:"name,omitempty" yaml:",omitempty"`           // Container name
-	Volumes       []Mapping     `json:"volumes,omitempty" yaml:",omitempty"`        // List of volume mappings
-	Ports         []Mapping     `json:"ports,omitempty" yaml:",omitempty"`          // List of port mappings
-	Env           []Mapping     `json:"env,omitempty" yaml:",omitempty"`            // List of environment variables; has priority over `EnvReader`
-	RestartPolicy RestartPolicy `json:"restart,omitempty" yaml:"restart,omitempty"` // Container restart policy
-	Network       string        `json:"network,omitempty" yaml:",omitempty"`        // Container network
+	Image         string                      `json:"image,omitempty" yaml:",omitempty"`          // Image name; required
+	Name          string                      `json:"name,omitempty" yaml:",omitempty"`           // Container name
+	Volumes       []Mapping                   `json:"volumes,omitempty" yaml:",omitempty"`        // List of volume mappings
+	Ports         []Mapping                   `json:"ports,omitempty" yaml:",omitempty"`          // List of port mappings
+	Env           []Mapping                   `json:"env,omitempty" yaml:",omitempty"`            // List of environment variables; has priority over `EnvReader`
+	RestartPolicy container.RestartPolicyMode `json:"restart,omitempty" yaml:"restart,omitempty"` // Container restart policy
+	Network       string                      `json:"network,omitempty" yaml:",omitempty"`        // Container network
 }
 
 func buildPortBindings(mappings []Mapping) (nat.PortSet, nat.PortMap) {
@@ -95,7 +95,7 @@ func RunContainer(cli client.ContainerAPIClient, options *RunContainerOptions) (
 	config.Env = buildEnvironment(options.Env)
 	hostConfig.Mounts = buildMounts(options.Volumes)
 	if options.RestartPolicy != "" {
-		hostConfig.RestartPolicy.Name = string(options.RestartPolicy)
+		hostConfig.RestartPolicy.Name = options.RestartPolicy
 	}
 	if options.Network != "" {
 		hostConfig.NetworkMode = container.NetworkMode(options.Network)
